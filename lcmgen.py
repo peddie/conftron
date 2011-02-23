@@ -505,8 +505,8 @@ class LCMEnum():
         if 'comment' in self.attrib:
             estr += "/* " + self.attrib['comment'] + " */\n"
         if self.attrib.has_key('__base__'):
-            outstr += "#ifndef " + self.name.upper() + "\n"
-            outstr += "#define " + self.name.upper() + "\n"
+            estr += "#ifndef " + self.name.upper() + "\n"
+            estr += "#define " + self.name.upper() + "\n"
         estr += "typedef " 
         estr += "enum {\n"
         for f in self.attrib['fields'].rsplit(','):
@@ -518,7 +518,7 @@ class LCMEnum():
             estr += self.attrib['name']
         estr += ";\n"
         if self.attrib.has_key('__base__'):
-            outstr += "#endif // " + self.name.upper() + "\n"
+            estr += "#endif // " + self.name.upper() + "\n"
         return estr
 
     def to_c_defines(self):
