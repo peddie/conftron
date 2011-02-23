@@ -146,6 +146,18 @@ periodic functions for all the telemetry and settings in class `ap';
 the simulator handles its own telemetry and settings in class `sim'.
 No matter where the autopilot is running, it does the same thing.
 
+3.7) Channels
+
+LCM telemetry is on channels named <classname>_<typename>_<varname>;
+for example, the code above sends telemetry on channel
+`myclass_foobar_t_quux'.  The settings system subscribes to almost the
+same channel, but `_set' is appended to the telemetry channel name.
+When it has successfully updated a structure, the modified structure
+is returned for confirmation on a channel like the telemetry channel
+but with `_ack' appended.  You may specify a custom channel for
+settings or telemetry in xml; please think hard before you do this,
+because it's easy to mungle things up.  
+
 4) Platform-specific issues
 
 4.1) Windows
@@ -167,13 +179,14 @@ Enter the `conftron_example/' directory to find the example program.
 Copy or link the conf/ folder you find there to the folder that
 contains conftron/ (so relatively, it's ../../).  Now type `make
 conftron AIRCRAFT=testac && make AIRCRAFT=testac'.  This builds a
-small C program (test.c) with a module (testmodule.[ch]) that sends
-periodic LCM telemetry and receives LCM settings, along with a python
-program that can be used to send a settings message and confirm that
-the messaging is working.  It has access to #defined values from
-`conf/airframes/testac.xml' during the build process.  The makefile
-illustrates how to integrate conftron into the build process of an
-external project.
+small C program (test, from test.c) with a module (testmodule.[ch])
+that sends periodic LCM telemetry and receives LCM settings, along
+with python programs that can be used to monitor the sent telemetry
+(test_telem.py) and send a settings message and confirm that the
+messaging is working (test_settings.py).  The test program has access
+to #defined values from `conf/airframes/testac.xml' during the build
+process.  The makefile illustrates how to integrate conftron into the
+build process of an external project.
 
 6) Bugs
 
