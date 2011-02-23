@@ -121,7 +121,20 @@ void
 #else
   if ((counter %% ((int) (1.0/(%(timestep)s * %(flightrate)s)))) == 0) 
 #endif // %(sim_flag)s
-    %(classname)s_lcm_send(&%(varname)s, %(typename)s);
+    %(classname)s_lcm_send_chan(&%(varname)s, %(typename)s, "%(classname)s_%(typename)s_%(varname)s");
+}
+"""
+
+lcm_telemetry_custom_chan_template = """
+void 
+%(classname)s_%(varname)s_send(int counter)
+{
+#ifdef %(sim_flag)s
+  if ((counter %% ((int) (1.0/(%(timestep)s * %(simrate)s)))) == 0) 
+#else
+  if ((counter %% ((int) (1.0/(%(timestep)s * %(flightrate)s)))) == 0) 
+#endif // %(sim_flag)s
+    %(classname)s_lcm_send_chan(&%(varname)s, %(typename)s, "%(channel)s");
 }
 """
 
@@ -152,7 +165,16 @@ void
 %(varname)s_settings_init(const char *provider)
 {
   %(classname)s_lcm_init(provider);
-  %(classname)s_lcm_subscribe(%(typename)s, &%(classname)s_%(varname)s_setter, NULL);
+  %(classname)s_lcm_subscribe_chan(%(typename)s, &%(classname)s_%(varname)s_setter, NULL, "%(classname)s_%(typename)s_%(varname)s_set");
+}
+"""
+
+lcm_settings_init_custom_chan_template = """
+void
+%(varname)s_settings_init(const char *provider)
+{
+  %(classname)s_lcm_init(provider);
+  %(classname)s_lcm_subscribe_chan(%(typename)s, &%(classname)s_%(varname)s_setter, NULL, "%(channel)s");
 }
 """
 
@@ -203,6 +225,7 @@ void
                                  void *user __attribute__((unused)))
 {
 %(field_settings)s
+  %(classname)s_lcm_send_chan(&%(varname)s, %(typename)s, "%(classname)s_%(typename)s_%(varname)s_ack");
 }
 """
 
@@ -551,13 +574,12 @@ class CStructClass(CHeader, LCMFile, CCode):
         self.to_lcm(self.name, structs_f)
     
 class TelemetryMessage(CHeader, CCode):
-    def __init__(self, varname, typename, classname, simrate, flightrate):
-        self.a = {}
-        self.a['varname'] = varname
-        self.a['typename'] = typename
-        self.a['classname'] = classname
-        self.a['simrate'] = simrate
-        self.a['flightrate'] = flightrate
+    def __init__(self, hsh):
+        self.a = hsh
+        self.a['varname'] = self.a['name']
+        self.a['typename'] = self.a['type']
+        self.a['simrate'] = self.a['sim']
+        self.a['flightrate'] = self.a['flight']
         self.a['sim_flag'] = sim_flag
         self.a['timestep'] = timestep
 
@@ -569,7 +591,10 @@ class TelemetryMessage(CHeader, CCode):
         def th(cf):
             cf.write("#include <%(classname)s_telemetry.h>\n" % self.a)
             cf.write("#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n");
-            cf.write(lcm_telemetry_template % self.a)
+            if self.a.has_key('channel'):
+                cf.write(lcm_telemetry_custom_chan_template % self.a)
+            else:
+                cf.write(lcm_telemetry_template % self.a)
             cf.write("#ifdef __cplusplus\n}\n#endif\n\n");
         self.to_h(filename, th)
 
@@ -705,7 +730,10 @@ class LCMSetting(CHeader, LCMFile, CCode):
             cf.write("#include <math.h>\n" % self.a)
             cf.write("#include <telemetry/%(basename)s.h>\n" % {"basename":basename})
             cf.write("#include <%(classname)s_settings.h>\n" % self.a)
-            cf.write(lcm_settings_init_template % self.a)
+            if self.a.has_key('channel'):
+                cf.write(lcm_settings_init_custom_chan_template % self.a)
+            else:
+                cf.write(lcm_settings_init_template % self.a)
             cf.write(lcm_settings_func_template % self.a)
         self.to_h(filename, sf)
 
@@ -798,13 +826,12 @@ def filter_messages(clname, msgs, cl):
     outstructs = []
     for msg in msgs:
         if msg.tag == 'message':
-            fl = cl.attrib['flight']
-            sm = cl.attrib['sim']
-            if msg.attrib.has_key('flight'):
-                fl = msg.attrib['flight']
-            if msg.attrib.has_key('sm'):
-                sm = msg.attrib['sim']
-            outstructs.append(TelemetryMessage(msg.attrib['name'], msg.attrib['type'], clname, sm, fl))
+            if not msg.attrib.has_key('flight'):
+                msg.attrib['flight'] = cl.attrib['flight']
+            if not msg.attrib.has_key('sim'):
+                msg.attrib['sim'] = cl.attrib['sim']
+            msg.attrib['classname'] = clname
+            outstructs.append(TelemetryMessage(msg.attrib))
         else:
             print parse_type_error % {"msg_tag":msg.tag, "filename":"telemetry"}
     return outstructs
