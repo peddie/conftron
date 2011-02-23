@@ -77,6 +77,12 @@ field within the section.  (If both are specified, the value inside
 the field tag will take precedence.)
 """
 
+parse_settings_badval = """\
+Error: Settings generation received a(n) `%(sp)s' value of `%(val)s'
+for field `%(f)s' in section `%(s)s'.  This value doesn't make sense
+given the specified bounded range of [%(min)s, %(max)s].
+"""
+
 parse_type_error = """\ 
 Warning: XML parser encountered an object of type `%(msg_tag)s' 
 in file `%(filename)s.xml.'  Either the XML is broken 
@@ -186,20 +192,31 @@ void
 }
 """
 
+lcm_settings_set_nop_template = """
+void
+%(classname)s_%(varname)s_setter(const lcm_recv_buf_t *rbuf __attribute__((unused)),  
+                                      const char *channel __attribute__((unused)),
+                                      const %(classname)s_%(typename)s *msg __attribute__((unused)),
+                                      void *user __attribute__((unused)))
+{
+  return;
+}
+"""
+
 lcm_settings_init_prototype = """\
 void %(varname)s_settings_init(const char *provider); 
 """
 
 lcm_settings_init_call_template = """  %(varname)s_settings_init(provider); \\"""
-lcm_settings_init_null_template = """  %(classname)s_%(varname)s_setter(NULL, NULL, NULL, NULL); \\
-"""
+lcm_settings_init_null_template = """  %(classname)s_%(varname)s_setter(NULL, NULL, NULL, NULL); \\"""
 
 lcm_settings_init_class_template = """
 /* Initialize all the LCM classes and set all settings values to their
    default values as defined in XML */
 #define %(classname)s_settings_init(provider) {      \\
 %(init_calls)s
-%(null_calls)s }
+%(null_calls)s
+}
 """
 
 lcm_settings_init_all_template = """
@@ -213,7 +230,7 @@ lcm_settings_init_all_template = """
 lcm_settings_prototype = """
 void %(classname)s_%(varname)s_setter(const lcm_recv_buf_t *rbuf,  
                                       const char *channel,
-                                      const %(classname)s_%(typename)s *msg,                            
+                                      const %(classname)s_%(typename)s *msg,
                                       void *user);
 """
 
@@ -740,7 +757,9 @@ class LCMSetting(CHeader, LCMFile, CCode):
     def to_settings_nop(self):
         filename = stubs_folder + "/%(classname)s_%(typename)s_%(varname)s_setting_stub" % self.a
         def stub_f(cf):
+            cf.write("#include <lcm_settings_auto.h>\n\n")
             cf.write(lcm_settings_init_nop_template % self.a)
+            cf.write(lcm_settings_set_nop_template % self.a)
         self.to_c_no_h(filename, stub_f)
 
     def to_settings_prototype(self, cf):
@@ -853,28 +872,71 @@ def filter_settings(clname, structs):
             notfound = []
             ## Try to get attributes for setting from the section if
             ## they're not in the field.
-            for sp in (['default'] + bounds):
-                if not sp in f.attrib and sp in s.attrib:
+            for sp in (['step', 'default']):
+                if (attrs.has_key(sp)):
+                    pass
+                elif (not attrs.has_key(sp)) and (s.attrib.has_key(sp)):
                     attrs[sp] = s.attrib[sp]
                 else:
                     notfound.append(sp)
 
             ## Make sure we don't have any unbounded settings values.
             ## That's Dangerous!
-            if (not 'min' in attrs or not 'max' in attrs) and (not 'absmax' in attrs):
-                print parse_settings_nobounds % {"f":f.attrib['name'], "s":s.attrib['name']}
-                # die += 1
-            else:
-                for b in bounds:
-                    try:
-                        notfound.remove(b)
-                    except ValueError:
-                        pass
-                    
+            if (((not attrs.has_key('min')) 
+                or (not attrs.has_key('max')))
+                and (not attrs.has_key('absmax'))):
+                if s.attrib.has_key('min') and s.attrib.has_key('max'):
+                    attrs['min'] = s.attrib['min']
+                    attrs['max'] = s.attrib['max']
+                elif s.attrib.has_key('absmax'):
+                    attrs['absmax'] = s.attrib['absmax']
+                else:
+                    print parse_settings_nobounds % {"f":f.attrib['name'], "s":s.attrib['name']}
+                    die += 1
+
+            ## Default values outside the range given by the bounds
+            ## don't make sense either.
+            if attrs.has_key('min'):
+                if (float(attrs['min']) > float(attrs['default'])
+                    or float(attrs['max']) < float(attrs['default'])):
+                    print parse_settings_badval % {"sp":'default', 
+                                                   "f":f.attrib['name'], 
+                                                   "s":s.attrib['name'], 
+                                                   "max":attrs['max'], 
+                                                   "min":attrs['min'], 
+                                                   "val":attrs['default']} 
+                    die += 1
+                if float(attrs['step']) > (float(attrs['max']) - float(attrs['min'])):
+                    print parse_settings_badval % {"sp":'default', 
+                                                   "f":f.attrib['name'], 
+                                                   "s":s.attrib['name'], 
+                                                   "max":attrs['max'], 
+                                                   "min":attrs['min'], 
+                                                   "val":attrs['step']} 
+                    die += 1
+            elif attrs.has_key('absmax'):
+                if (-float(attrs['absmax']) > float(attrs['default'])
+                    or float(attrs['absmax']) < float(attrs['default'])):
+                    print parse_settings_badval % {"sp":'step', 
+                                                   "f":f.attrib['name'], 
+                                                   "s":s.attrib['name'], 
+                                                   "max":attrs['absmax'], 
+                                                   "min":"-"+attrs['absmax'], 
+                                                   "val":attrs['default']} 
+                    die += 1
+                if float(attrs['step']) > (float(attrs['absmax'])*2):
+                    print parse_settings_badval % {"sp":'step', 
+                                                   "f":f.attrib['name'], 
+                                                   "s":s.attrib['name'], 
+                                                   "max":attrs['absmax'], 
+                                                   "min":"-"+attrs['absmax'], 
+                                                   "val":attrs['step']} 
+                    die += 1
+                
             ## Bail if there's a problem
             for nf in notfound:
                 print parse_settings_noval % {"sp":nf, "f":f.attrib['name'], "s":s.attrib['name']}
-                # die += 1 
+                die += 1 
 
             ## All OK; create a new hash that eventually becomes a setting
             attrs['classname'] = clname

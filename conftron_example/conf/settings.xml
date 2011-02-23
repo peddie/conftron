@@ -4,8 +4,14 @@
   <class name="ap">
     <struct name="xyz_test" varname="foobar" type="xyz_t" min="1" max="1500" default="12.1">
       <member name="x" min="1" max="9001" default="222" step="1"/>
-      <member name="y" absmax="14" default="222" step="1"/>
+      <member name="y" absmax="14" default="2" step="1"/>
       <member name="z" step="2" comment="remember, +z = down" shortname="down axis"/>
+    </struct>
+
+    <struct name="xyz_test_b" varname="quux_o_tron" type="xyz_t" min="1" max="2200" default="22" channel="my_custom_channel_name">
+      <member name="x" step="0.5" default="2"/>
+      <member name="y" step="0.5"/>
+      <member name="z" step="0.5"/>
     </struct>
   </class>
 </protocol>
