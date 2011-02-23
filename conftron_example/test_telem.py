@@ -1,6 +1,6 @@
 import lcm, sys
 
-sys.path.append("../")
+sys.path.append("../python/")
 import ap
 
 lc = lcm.LCM()
