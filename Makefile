@@ -8,7 +8,8 @@ SRC += $(shell ls *_telemetry.c)
 LCM_TYPES = $(shell cat classes.dat | perl -pe "s/(\w+) /\1.lcm /gi;" 2>/dev/null)
 SRC += $(shell ./types.sh $(LCM_TYPES))
 
-OBJ = $(SRC:%.c=%.o)
+OBJ_DIR = obj
+OBJ = $(SRC:%.c=$(OBJ_DIR)/%.o)
 
 INCLUDES += -I.
 LDFLAGS += -llcm
@@ -23,6 +24,7 @@ AUTOFLAGS = -Wno-unused-parameter
 DEBUGFLAGS = -g -DDT=0.01
 OPTFLAGS = 
 
+LIB_DIR = lib
 LIBSRC = $(shell ls stubs/*stub.c)
 LIBOBJ = $(LIBSRC:%.c=%.o)
 LIBNAME = libautostubs
@@ -67,12 +69,13 @@ gen:
 	@echo
 
 # This builds a shared library. 
-# $(Q)$(CC) $(CFLAGS) $(MKLIBFLAGS) $< -o $(LIBNAME).so
+# $(Q)$(CC) $(CFLAGS) $(MKLIBFLAGS) $< -o $(LIB_DIR)/$(LIBNAME).so
+# @echo LIBCC $(LIBNAME).so
+
 lib: $(LIBOBJ)
 	@echo AR $(LIBNAME).a
-	$(Q)$(AR) rcs $(LIBNAME).a $(LIBOBJ)
+	$(Q)$(AR) rcs $(LIB_DIR)/$(LIBNAME).a $(LIBOBJ)
 	$(Q)rm *stub.o &>/dev/null || echo
-	@echo LIBCC $(LIBNAME).so
 
 compile: lib $(OBJ) 
 
@@ -80,21 +83,21 @@ stubs/%stub.o : stubs/%stub.c
 	@echo LIBCC $@
 	$(Q)$(CC) -c $(CFLAGS) $(LIBFLAGS) $< -o $@
 
-%.o : auto/%.c 
+$(OBJ_DIR)/%.o : auto/%.c 
 	@echo CC $@
-	$(Q)$(CC) -c $(CFLAGS) $(AUTOFLAGS) $< 
+	$(Q)$(CC) -c $(CFLAGS) $(AUTOFLAGS) $< -o $@
 
-%.o : %.c
+$(OBJ_DIR)/%.o : %.c
 	@echo CC $@
-	$(Q)$(CC) -c $(CFLAGS) $<
+	$(Q)$(CC) -c $(CFLAGS) $< -o $@
 
-%.o : telemetry/%.c 
+$(OBJ_DIR)/%.o : telemetry/%.c 
 	@echo CC $@
-	$(Q)$(CC) -c $(CFLAGS) $<
+	$(Q)$(CC) -c $(CFLAGS) $< -o $@
 
-%.o : settings/%.c
+$(OBJ_DIR)/%.o : settings/%.c
 	@echo CC $@
-	$(Q)$(CC) -c $(CFLAGS) $<
+	$(Q)$(CC) -c $(CFLAGS) $< -o $@
 
 upstream: 
 	$(Q)cd upstream; \
