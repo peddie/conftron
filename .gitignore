@@ -1,5 +1,9 @@
 auto/*.c
 auto/*.h
+*.o
+*.pyc
+*.a
+*.so
 
 # lcm build
 upstream/examples/python/exlcm
