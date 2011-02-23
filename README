@@ -1,0 +1,198 @@
+0) Purpose
+
+This project is a central system of the various permutations of the
+Paparazzi project developed at Joby Energy and Makani Power.  It
+attempts to collect the functionality I developed to generate a
+complete interface to the LCM multicast messaging system based on a
+high-level config file.  A lot of the design decisions are based on
+the way Paparazzi does things, but this one is in Python so that in
+spite of its messiness, most programmers can extend and improve it.
+
+1) Build LCM
+
+LCM depends on the glib library, and, for the python interface, the
+python headers.  On a debian-ish system, you can say
+
+  sudo apt-get install libglib2.0-dev python-dev
+
+to install these dependencies.  Now enter the `upstream' directory and
+run `./configure && make && sudo make install' to install the LCM
+toolkit.  
+
+There are more dependencies to be had if you want to install the Java
+or MATLAB interfaces, but then you've got bigger problems :)
+
+2) Build LCM interface and shared configuration
+
+In the top level directory, run `make' to generate the LCM interface
+in C and python.  The configuration of this interface is based on XML
+files located in `../conf/'.  
+
+You can see how to write the XML files based on the example files
+provided.  The three main config files are: 
+
+- types.xml, where you define structs that you want to be shared by
+  the project and transmissible via LCM messaging
+
+- telemetry.xml, where you define specific instances where you want to
+  send structs over LCM
+
+- settings.xml, where you define specific instances where you want
+  structs to be settable over LCM
+
+You can also pass an AIRCRAFT= parameter to the `make' command to take
+in a paparazzi-style XML file that defines many #defined quantities
+for use in the build.  
+
+3) Use the generated interface
+
+3.1) Make
+
+Your external project should include `conftron/includes'.  This
+exports a number of object files in $(EXTOBJ), along with additions to
+INCLUDES and LDFLAGS, that you should hand to your compiler and linker
+in order to get ahold of the LCM interface.  In order to run conftron
+from an external project, for example to rebuild with different
+AIRCRAFT= parameters without having to leave your original directory,
+simply call `$(MAKE) -C $(CONFTRON_DIR) AIRCRAFT=$(AIRCRAFT)'.
+
+More on this last part: If you pass AIRCRAFT=foo to your `make' call,
+then conftron will try to build a file of #defines called `foo.h' and
+export it as `AIRFRAME_CONSTANTS'.  So, from your external project
+that uses conftron, you can simply say `#include AIRFRAME_CONSTANTS'
+and pass an AIRCRAFT parameter to the build process to get access to
+the configuration XML for your airframe.
+
+Currently build dependencies aren't used, because I don't understand
+them, I had time constraints and you don't have to rebuild very often
+anyway.  If you can get build dependencies working so that calling
+`make' in conftron is just a normal part of the external project's
+build process, I promise beer.
+
+3.2) Types
+
+To use the generated types, simply #include <(classname)_types.h>,
+where (classname) is e.g. `ap' or `sim' or any class you've defined in
+types.xml.  
+
+3.3) Telemetry 
+
+To e.g. activate and periodically send and receive LCM telemetry from
+your main loop, #include <lcm_telemetry.h>.  
+
+To send a message you've defined in telemetry.xml, just #include the
+correct telemetry header after you have declared the struct you intend
+to send.  For example, say you have defined a type `foobar_t' in
+types.xml (in class `myclass'), and you've declared a message of type
+`foobar_t' named `quux'.  Then in the c module where `quux' is
+located:
+
+static foobar_t quux;
+#include <telemetry/myclass_foobar_t_quux.h>
+
+This will not work correctly (you will get a compiler error) if you
+don't #include the telemetry file AFTER you have declared `quux'.  I'm
+sorry that this is a bit of a hack, but it makes telemetry mostly
+painless from your end, and it avoids having to extern lots of crap.
+
+`quux' will now be sent down the LCM link at the rates configured in
+telemetry.xml, provided you periodically call myclass_telemetry_send()
+at the correct rate.
+
+3.4) Settings
+
+Settings work the same way as telemetry, so
+
+static foobar_t quux;
+#include <settings/myclass_foobar_t_quux.h>
+
+is all that's required to allow settings messages that get sent up to
+modify `quux'.  
+
+3.5) LCM interface
+
+Simply #include <lcm_telemetry.h> for the toplevel lcm interface.  To
+initialize all classes, you can call lcm_init(const char *provider).
+To send telemetry from all classes, you can call
+`telemetry_send(void)'.  To initialize settings for all classes, you
+can call `settings_init(const char *provider)'.  (This will also
+initialize telemetry for those classes.)  To check for new settings
+messages from all classes, you can call `settings_check(void)'.
+
+The system intends you to #define DT to be the approximate period of
+your periodic loop.  telemetry_send() should be called in that loop.
+settings_check() can be called in that loop or more slowly; it is
+non-blocking.
+
+3.6) LCM class-by-class 
+
+If you have a class named `myclass', you can call
+`myclass_lcm_init(const char *provider)' to initialize telemetry for
+only that class.  Likewise, `myclass_telemetry_send()' will send
+telemetry for `myclass' at the appropriate rates (if called in a loop
+with period DT).
+
+Same goes for settings: `myclass_settings_init(const char *provider)'
+will initialize just the channels for `myclass'.  Likewise,
+`myclass_settings_check(void)' will check for new settings only in
+`myclass', whereas `settings_check(void)' will check for new settings
+messages in all classes.
+
+Why would you call them separately?  At Joby/Makani, we have an
+autopilot that is designed and built separately from the simulator or
+from the actual low-level harness that runs it on the flight computer.
+The autopilot code is responsible for initializing and running
+periodic functions for all the telemetry and settings in class `ap';
+the simulator handles its own telemetry and settings in class `sim'.
+No matter where the autopilot is running, it does the same thing.
+
+4) Platform-specific issues
+
+4.1) Windows
+
+I like to guzzle shit-covered glass shards, too!  Let's go out
+sometime.  
+
+4.2) Mac OS X
+
+For some reason there are sometimes problems with parallel make on OS
+X.  If you're encountering problems when you call `make' in this
+directory, try removing `-j' (or replacing with `-j <number of
+processor cores your computer has>') from the `all' compile target in
+the Makefile.
+
+5) Examples
+
+Enter the `conftron_example/' directory to find the example program.
+Copy or link the conf/ folder you find there to the folder that
+contains conftron/ (so relatively, it's ../../).  Now type `make
+conftron AIRCRAFT=testac && make AIRCRAFT=testac'.  This builds a
+small C program (test.c) with a module (testmodule.[ch]) that sends
+periodic LCM telemetry and receives LCM settings, along with a python
+program that can be used to send a settings message and confirm that
+the messaging is working.  It has access to #defined values from
+`conf/airframes/testac.xml' during the build process.  The makefile
+illustrates how to integrate conftron into the build process of an
+external project.
+
+6) Bugs
+
+Present and largely unaccounted for.  The code is a mess, too.  Bug
+reports, suggestions and patches are welcome.
+
+7) Internals, for the too curious for their own good
+
+- Paths to conf files are largely hardcoded, either at the top of
+  lcmgen.py or in the makefile.  
+
+- If you see weird linker errors, it might be because conftron passes
+  a library of stub telemetry and settings functions that don't do
+  anything and relies on the linker to grab the stubs for all the ones
+  you don't use in your code.
+
+8) Thanks
+
+Eric Parsonage came up with a good deal of the make and linker magic.  
+
+Greg Horn mercilessly bug-tested everything, helped refine the design,
+pointed out what features were important and tested on OS X.

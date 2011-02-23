@@ -1,0 +1,15 @@
+
+AP_PROJECT_ROOT ?= ..
+CONFTRON_DIR ?= $(AP_PROJECT_ROOT)/conftron
+CONFTRON_LIB_NAME ?= autostubs
+
+ifneq ($(CONFTRON_INCLUDES),22)
+
+INCLUDES += -I$(CONFTRON_DIR)/ -DAIRFRAME_CONSTANTS=\<airframes/$(AIRCRAFT).h\>
+LDFLAGS += -L$(CONFTRON_DIR) -l$(CONFTRON_LIB_NAME) -llcm
+## Sorry about this.  
+EXTOBJ += $(CONFTRON_DIR)/*.o
+
+CONFTRON_INCLUDES=22
+endif
+

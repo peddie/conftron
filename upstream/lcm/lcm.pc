@@ -1,0 +1,11 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: lcm
+Description: Lightweight Communications and Marshalling (LCM)
+Requires:
+Version: 0.5.2
+Libs: -L${libdir} -llcm
+Cflags: -I${includedir}

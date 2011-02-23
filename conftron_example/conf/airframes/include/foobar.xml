@@ -1,0 +1,5 @@
+<airframe>
+  <section name="FOOBAR" prefix="FOOBAR_">
+    <define name="INIT" value="{2, 2, 2}"/>
+  </section>
+</airframe>

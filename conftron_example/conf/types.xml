@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<!DOCTYPE protocol SYSTEM "types.dtd">
+<protocol>
+
+  <!-- This message is not in any class, so it can be used inside all
+       the message classes.  -->
+  <message name="xyz_t">
+    <field name="x" type="double" comment="placeholder"/>
+    <field name="y" type="double" comment="placeholder"/>
+    <field name="z" type="double" comment="placeholder"/>
+  </message>
+
+  <class name="ap">
+
+    <!-- currently need to pass "ptr" and "array" attributes.  I will
+	 add a middle parsing step that automatically fills these in if
+	 you want to just write the whole shebang in the name field.-->
+    <message name="test_t" comment="test comment">
+      <field name="ptrtest" type="double" ptr="*" />
+      <field name="arraytest" type="xyz_t" array="2" />
+      <field name="dptrtest" type="float" ptr="3" />
+      <field name="darraytest" type="float" array="22,35" />
+      <!-- Note that alt_unit and alt_unit_coeff don't do anything!
+	   They don't go into C at all; in Python they will be part of
+	   the class that gets implemented.  You can get hold of their
+	   text to do plotting or something.  -->
+      <field name="unittest" 
+	     type="double" 
+	     unit="meters" 
+	     comment="lick my ball sac!" 
+	     alt_unit="feet" 
+	     alt_unit_coeff="3.2808399"/>
+    </message>
+
+    <!-- Enum support is present but not as solid as normal struct
+	 support. -->
+    <enum name="dont_name_me_command_t" 
+	  comment="lcm doesn't have native enums!  What a steaming pile of hoe!"
+	  fields="DO_SOMETHING,
+		  DO_SOMETHING_ELSE,
+		  TAKE_A_DUMP_ON_SIMULINK,
+		  EAT_SHIT_AND_DIE"/>
+
+  </class>
+
+  <class name="sim">
+    <message name="estimator_debug_t"
+	     comment="Just for debugging the estimator in the sim">
+      <field name="P" type="double" array="15,15" comment="Error covariance"/>
+      <field name="gyro_null" type="xyz_t" comment="Null vector for gyroscopes"/>
+      <field name="innovations" type="double" array="15" comment="Innovations from the last step"/>
+    </message>
+  </class>
+
+</protocol>

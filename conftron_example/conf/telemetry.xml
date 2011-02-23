@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!DOCTYPE protocol SYSTEM "types.dtd">
+<protocol>
+  <!-- ap -->
+  <class name="ap" sim="35" flight="20">
+    <message name="foobar" type="xyz_t" sim="22"/>
+  </class>
+
+</protocol>

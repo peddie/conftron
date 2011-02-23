@@ -1,0 +1,236 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>eventlog</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.75.2">
+<link rel="home" href="index.html" title="LCM Reference Manual">
+<link rel="up" href="ch02.html" title="API Reference">
+<link rel="prev" href="lcm-lcm.html" title="lcm">
+<link rel="next" href="ch03.html" title="Example LCM Type">
+<meta name="generator" content="GTK-Doc V1.14 (XML mode)">
+<link rel="stylesheet" href="style.css" type="text/css">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table class="navigation" id="top" width="100%" summary="Navigation header" cellpadding="2" cellspacing="2">
+<tr valign="middle">
+<td><a accesskey="p" href="lcm-lcm.html"><img src="left.png" width="24" height="24" border="0" alt="Prev"></a></td>
+<td><a accesskey="u" href="ch02.html"><img src="up.png" width="24" height="24" border="0" alt="Up"></a></td>
+<td><a accesskey="h" href="index.html"><img src="home.png" width="24" height="24" border="0" alt="Home"></a></td>
+<th width="100%" align="center">LCM Reference Manual</th>
+<td><a accesskey="n" href="ch03.html"><img src="right.png" width="24" height="24" border="0" alt="Next"></a></td>
+</tr>
+<tr><td colspan="5" class="shortcuts">
+<a href="#lcm-eventlog.synopsis" class="shortcut">Top</a>
+                   | 
+                  <a href="#lcm-eventlog.description" class="shortcut">Description</a>
+</td></tr>
+</table>
+<div class="refentry" title="eventlog">
+<a name="lcm-eventlog"></a><div class="titlepage"></div>
+<div class="refnamediv"><table width="100%"><tr>
+<td valign="top">
+<h2><span class="refentrytitle"><a name="lcm-eventlog.top_of_page"></a>eventlog</span></h2>
+<p>eventlog — Read and write LCM log files</p>
+</td>
+<td valign="top" align="right"></td>
+</tr></table></div>
+<div class="refsynopsisdiv" title="Synopsis">
+<a name="lcm-eventlog.synopsis"></a><h2>Synopsis</h2>
+<pre class="synopsis">                    <a class="link" href="lcm-eventlog.html#lcm-eventlog-t" title="lcm_eventlog_t">lcm_eventlog_t</a>;
+                    <a class="link" href="lcm-eventlog.html#lcm-eventlog-event-t" title="lcm_eventlog_event_t">lcm_eventlog_event_t</a>;
+<a class="link" href="lcm-eventlog.html#lcm-eventlog-t" title="lcm_eventlog_t"><span class="returnvalue">lcm_eventlog_t</span></a> *    <a class="link" href="lcm-eventlog.html#lcm-eventlog-create" title="lcm_eventlog_create ()">lcm_eventlog_create</a>                 (<em class="parameter"><code>const <span class="type">char</span> *path</code></em>,
+                                                         <em class="parameter"><code>const <span class="type">char</span> *mode</code></em>);
+<a class="link" href="lcm-eventlog.html#lcm-eventlog-event-t" title="lcm_eventlog_event_t"><span class="returnvalue">lcm_eventlog_event_t</span></a> * <a class="link" href="lcm-eventlog.html#lcm-eventlog-read-next-event" title="lcm_eventlog_read_next_event ()">lcm_eventlog_read_next_event</a>     (<em class="parameter"><code><a class="link" href="lcm-eventlog.html#lcm-eventlog-t" title="lcm_eventlog_t"><span class="type">lcm_eventlog_t</span></a> *eventlog</code></em>);
+<span class="returnvalue">void</span>                <a class="link" href="lcm-eventlog.html#lcm-eventlog-free-event" title="lcm_eventlog_free_event ()">lcm_eventlog_free_event</a>             (<em class="parameter"><code><a class="link" href="lcm-eventlog.html#lcm-eventlog-event-t" title="lcm_eventlog_event_t"><span class="type">lcm_eventlog_event_t</span></a> *le</code></em>);
+<span class="returnvalue">int</span>                 <a class="link" href="lcm-eventlog.html#lcm-eventlog-seek-to-timestamp" title="lcm_eventlog_seek_to_timestamp ()">lcm_eventlog_seek_to_timestamp</a>      (<em class="parameter"><code><a class="link" href="lcm-eventlog.html#lcm-eventlog-t" title="lcm_eventlog_t"><span class="type">lcm_eventlog_t</span></a> *eventlog</code></em>,
+                                                         <em class="parameter"><code><span class="type">int64_t</span> ts</code></em>);
+<span class="returnvalue">int</span>                 <a class="link" href="lcm-eventlog.html#lcm-eventlog-write-event" title="lcm_eventlog_write_event ()">lcm_eventlog_write_event</a>            (<em class="parameter"><code><a class="link" href="lcm-eventlog.html#lcm-eventlog-t" title="lcm_eventlog_t"><span class="type">lcm_eventlog_t</span></a> *eventlog</code></em>,
+                                                         <em class="parameter"><code><a class="link" href="lcm-eventlog.html#lcm-eventlog-event-t" title="lcm_eventlog_event_t"><span class="type">lcm_eventlog_event_t</span></a> *le</code></em>);
+<span class="returnvalue">void</span>                <a class="link" href="lcm-eventlog.html#lcm-eventlog-destroy" title="lcm_eventlog_destroy ()">lcm_eventlog_destroy</a>                (<em class="parameter"><code><a class="link" href="lcm-eventlog.html#lcm-eventlog-t" title="lcm_eventlog_t"><span class="type">lcm_eventlog_t</span></a> *eventlog</code></em>);
+</pre>
+</div>
+<div class="refsect1" title="Description">
+<a name="lcm-eventlog.description"></a><h2>Description</h2>
+</div>
+<div class="refsect1" title="Details">
+<a name="lcm-eventlog.details"></a><h2>Details</h2>
+<div class="refsect2" title="lcm_eventlog_t">
+<a name="lcm-eventlog-t"></a><h3>lcm_eventlog_t</h3>
+<pre class="programlisting">typedef struct {
+    FILE *f;
+    int64_t eventcount;
+} lcm_eventlog_t;
+</pre>
+<p>
+</p>
+</div>
+<hr>
+<div class="refsect2" title="lcm_eventlog_event_t">
+<a name="lcm-eventlog-event-t"></a><h3>lcm_eventlog_event_t</h3>
+<pre class="programlisting">typedef struct {
+    int64_t eventnum; 
+    int64_t timestamp;
+    int32_t channellen;
+    int32_t datalen;
+
+    char     *channel;
+    void     *data;
+} lcm_eventlog_event_t;
+</pre>
+<p>
+</p>
+</div>
+<hr>
+<div class="refsect2" title="lcm_eventlog_create ()">
+<a name="lcm-eventlog-create"></a><h3>lcm_eventlog_create ()</h3>
+<pre class="programlisting"><a class="link" href="lcm-eventlog.html#lcm-eventlog-t" title="lcm_eventlog_t"><span class="returnvalue">lcm_eventlog_t</span></a> *    lcm_eventlog_create                 (<em class="parameter"><code>const <span class="type">char</span> *path</code></em>,
+                                                         <em class="parameter"><code>const <span class="type">char</span> *mode</code></em>);</pre>
+<p>
+Open a log file for reading (mode = "r"), or writing (mode = "w")
+</p>
+<div class="variablelist"><table border="0">
+<col align="left" valign="top">
+<tbody>
+<tr>
+<td><p><span class="term"><em class="parameter"><code>path</code></em> :</span></p></td>
+<td>Log file to open
+</td>
+</tr>
+<tr>
+<td><p><span class="term"><em class="parameter"><code>mode</code></em> :</span></p></td>
+<td>must be "r" or "w"
+</td>
+</tr>
+<tr>
+<td><p><span class="term"><span class="emphasis"><em>Returns</em></span> :</span></p></td>
+<td> a newly allocated lcm_eventlog_t, or NULL on failure.
+</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<hr>
+<div class="refsect2" title="lcm_eventlog_read_next_event ()">
+<a name="lcm-eventlog-read-next-event"></a><h3>lcm_eventlog_read_next_event ()</h3>
+<pre class="programlisting"><a class="link" href="lcm-eventlog.html#lcm-eventlog-event-t" title="lcm_eventlog_event_t"><span class="returnvalue">lcm_eventlog_event_t</span></a> * lcm_eventlog_read_next_event     (<em class="parameter"><code><a class="link" href="lcm-eventlog.html#lcm-eventlog-t" title="lcm_eventlog_t"><span class="type">lcm_eventlog_t</span></a> *eventlog</code></em>);</pre>
+<p>
+Read the next event in the log file.  Valid in read mode only.
+</p>
+<div class="variablelist"><table border="0">
+<col align="left" valign="top">
+<tbody>
+<tr>
+<td><p><span class="term"><em class="parameter"><code>eventlog</code></em> :</span></p></td>
+<td>The log file
+</td>
+</tr>
+<tr>
+<td><p><span class="term"><span class="emphasis"><em>Returns</em></span> :</span></p></td>
+<td> the next event in the log file; free the returned structure with
+<a class="link" href="lcm-eventlog.html#lcm-eventlog-free-event" title="lcm_eventlog_free_event ()"><code class="function">lcm_eventlog_free_event()</code></a>
+</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<hr>
+<div class="refsect2" title="lcm_eventlog_free_event ()">
+<a name="lcm-eventlog-free-event"></a><h3>lcm_eventlog_free_event ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>                lcm_eventlog_free_event             (<em class="parameter"><code><a class="link" href="lcm-eventlog.html#lcm-eventlog-event-t" title="lcm_eventlog_event_t"><span class="type">lcm_eventlog_event_t</span></a> *le</code></em>);</pre>
+<p>
+free a structure returned by read_next_event.
+</p>
+<div class="variablelist"><table border="0">
+<col align="left" valign="top">
+<tbody><tr>
+<td><p><span class="term"><em class="parameter"><code>le</code></em> :</span></p></td>
+<td>A structure returned by <a class="link" href="lcm-eventlog.html#lcm-eventlog-read-next-event" title="lcm_eventlog_read_next_event ()"><code class="function">lcm_eventlog_read_next_event()</code></a>
+</td>
+</tr></tbody>
+</table></div>
+</div>
+<hr>
+<div class="refsect2" title="lcm_eventlog_seek_to_timestamp ()">
+<a name="lcm-eventlog-seek-to-timestamp"></a><h3>lcm_eventlog_seek_to_timestamp ()</h3>
+<pre class="programlisting"><span class="returnvalue">int</span>                 lcm_eventlog_seek_to_timestamp      (<em class="parameter"><code><a class="link" href="lcm-eventlog.html#lcm-eventlog-t" title="lcm_eventlog_t"><span class="type">lcm_eventlog_t</span></a> *eventlog</code></em>,
+                                                         <em class="parameter"><code><span class="type">int64_t</span> ts</code></em>);</pre>
+<p>
+seek (approximately) to a particular timestamp
+</p>
+<div class="variablelist"><table border="0">
+<col align="left" valign="top">
+<tbody>
+<tr>
+<td><p><span class="term"><em class="parameter"><code>eventlog</code></em> :</span></p></td>
+<td>The log file
+</td>
+</tr>
+<tr>
+<td><p><span class="term"><em class="parameter"><code>ts</code></em> :</span></p></td>
+<td>Timestamp of the target event in the log file.
+</td>
+</tr>
+<tr>
+<td><p><span class="term"><span class="emphasis"><em>Returns</em></span> :</span></p></td>
+<td>
+</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<hr>
+<div class="refsect2" title="lcm_eventlog_write_event ()">
+<a name="lcm-eventlog-write-event"></a><h3>lcm_eventlog_write_event ()</h3>
+<pre class="programlisting"><span class="returnvalue">int</span>                 lcm_eventlog_write_event            (<em class="parameter"><code><a class="link" href="lcm-eventlog.html#lcm-eventlog-t" title="lcm_eventlog_t"><span class="type">lcm_eventlog_t</span></a> *eventlog</code></em>,
+                                                         <em class="parameter"><code><a class="link" href="lcm-eventlog.html#lcm-eventlog-event-t" title="lcm_eventlog_event_t"><span class="type">lcm_eventlog_event_t</span></a> *le</code></em>);</pre>
+<p>
+Write an event into a log file.  Valid in write mode only.
+</p>
+<p>
+eventnum will be filled in for you
+</p>
+<div class="variablelist"><table border="0">
+<col align="left" valign="top">
+<tbody>
+<tr>
+<td><p><span class="term"><em class="parameter"><code>eventlog</code></em> :</span></p></td>
+<td>The log file
+</td>
+</tr>
+<tr>
+<td><p><span class="term"><em class="parameter"><code>le</code></em> :</span></p></td>
+<td>The event to write to the file
+</td>
+</tr>
+<tr>
+<td><p><span class="term"><span class="emphasis"><em>Returns</em></span> :</span></p></td>
+<td>
+</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<hr>
+<div class="refsect2" title="lcm_eventlog_destroy ()">
+<a name="lcm-eventlog-destroy"></a><h3>lcm_eventlog_destroy ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>                lcm_eventlog_destroy                (<em class="parameter"><code><a class="link" href="lcm-eventlog.html#lcm-eventlog-t" title="lcm_eventlog_t"><span class="type">lcm_eventlog_t</span></a> *eventlog</code></em>);</pre>
+<p>
+when you're done with the log, clean up after yourself!
+</p>
+<div class="variablelist"><table border="0">
+<col align="left" valign="top">
+<tbody><tr>
+<td><p><span class="term"><em class="parameter"><code>eventlog</code></em> :</span></p></td>
+<td>The log file
+</td>
+</tr></tbody>
+</table></div>
+</div>
+</div>
+</div>
+<div class="footer">
+<hr>
+          Generated by GTK-Doc V1.14</div>
+</body>
+</html>

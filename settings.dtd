@@ -1,0 +1,35 @@
+<!ELEMENT protocol (class+)>
+<!ATTLIST protocol>
+
+<!ELEMENT class (section+)>
+<!ATTLIST class
+	  name CDATA #REQUIRED
+>
+
+<!ELEMENT struct (setting+)>
+<!ATTLIST struct
+	  name CDATA #REQUIRED
+	  varname CDATA #REQUIRED
+	  type CDATA #REQUIRED
+	  min CDATA #IMPLIED
+	  max CDATA #IMPLIED
+	  absmax CDATA #IMPLIED
+	  default CDATA #IMPLIED
+	  step CDATA #IMPLIED
+>
+
+<!ELEMENT member (field*)>
+<!ATTLIST member
+	  name CDATA #REQUIRED
+	  min CDATA #IMPLIED
+	  max CDATA #IMPLIED
+	  absmax CDATA #IMPLIED
+	  default CDATA #IMPLIED
+	  step CDATA #IMPLIED
+	  comment CDATA #IMPLIED
+	  unit CDATA #IMPLIED
+	  alt_unit_coeff CDATA #IMPLIED
+	  shortname CDATA #IMPLIED
+	  module CDATA #IMPLIED
+>
+

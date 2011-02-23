@@ -1,0 +1,10 @@
+prefix=/usr/local
+datarootdir=${prefix}/share
+jardir=${datarootdir}/java
+
+Name: lcm-java
+Description: Java implementation Lightweight Communications and Marshalling
+Requires:
+Version: 0.5.2
+api_version=1.0
+classpath=${jardir}/lcm-0.5.2.jar

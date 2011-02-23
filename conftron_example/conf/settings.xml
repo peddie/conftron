@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!DOCTYPE protocol SYSTEM "types.dtd">
+<protocol>
+  <class name="ap">
+    <struct name="xyz_test" varname="foobar" type="xyz_t" min="1" max="1500" default="12.1">
+      <member name="x" min="1" max="9001" default="222" step="1"/>
+      <member name="y" absmax="14" default="222" step="1"/>
+      <member name="z" step="2" comment="remember, +z = down" shortname="down axis"/>
+    </struct>
+  </class>
+</protocol>

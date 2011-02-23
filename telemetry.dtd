@@ -1,0 +1,19 @@
+<!ELEMENT protocol (class+)>
+<!ATTLIST protocol>
+
+<!ELEMENT class (message+)>
+<!ATTLIST class
+	  name CDATA #REQUIRED
+	  sim CDATA #REQUIRED
+	  flight CDATA #REQUIRED
+>
+
+<!ELEMENT message (field*)>
+<!ATTLIST message
+	  name CDATA #REQUIRED
+	  type CDATA #REQUIRED
+	  sim CDATA #IMPLIED
+	  flight CDATA #IMPLIED
+	  comment CDATA #IMPLIED
+>
+

@@ -1,0 +1,9 @@
+<airframe name="testac">
+
+  <section name="TEST_SECTION" prefix="TEST_">
+    <define name="FREQUENCY" value="1.0/(DT)"/>
+  </section>
+
+  <include href="include/foobar.xml"/>
+
+</airframe>

@@ -1,0 +1,42 @@
+<!ELEMENT protocol ((class|struct)+)>
+<!ATTLIST protocol>
+
+<!ELEMENT class (message+)>
+<!ATTLIST class
+	  name CDATA #REQUIRED
+>
+
+<!ELEMENT struct (member*)>
+<!ATTLIST struct
+	  name CDATA #REQUIRED
+	  qualifiers CDATA #IMPLIED
+	  comment CDATA #IMPLIED
+	  id   CDATA #IMPLIED
+	  link CDATA #IMPLIED
+>
+
+<!ELEMENT member EMPTY>
+<!ATTLIST member
+	  name CDATA #REQUIRED
+	  ptr CDATA #IMPLIED
+	  array CDATA #IMPLIED
+	  type CDATA #REQUIRED
+	  unit CDATA #IMPLIED
+	  comment CDATA #IMPLIED
+	  alt_unit CDATA #IMPLIED
+	  alt_unit_coef CDATA #IMPLIED
+>
+
+<!ELEMENT enum EMPTY>
+<!ATTLIST enum
+	  name CDATA #REQUIRED
+	  fields CDATA #REQUIRED
+	  typedef CDATA #IMPLIED
+	  comment CDATA #IMPLIED
+>
+	  
+
+<!ELEMENT comment EMPTY>
+<!ATTLIST comment
+	  text CDATA #REQUIRED
+>
