@@ -54,7 +54,7 @@ engage: all
 
 lcm:
 	$(Q)lcm-gen -c $(LCM_TYPES) --c-cpath auto/ --c-hpath auto/
-	$(Q)lcm-gen -p $(LCM_TYPES) --ppath .
+	$(Q)lcm-gen -p $(LCM_TYPES) --ppath python/
 
 gen: 
 	@echo
@@ -103,21 +103,8 @@ upstream:
 	sudo $(MAKE) install; \
 	sudo ldconfig || echo "no ldconfig found; hope you're on a mac"; 
 
-test: test.o testmodule.o $(OBJ) 
-	$(CC) -o $@ $(CFLAGS) $?
-
-tidy: 
-	rm -f *.o *~ *.s; 
-
-clean: tidy
-	./clean.sh &>/dev/null
-	rm -f test
-
-old: 
-	@echo Generating autopilot LCM types . . . 
-	$(Q)python python_class_from_header.py path_follower_commands sim_commands
-	$(Q)lcm-gen -c $(LCM_TYPES) --c-cpath auto/ --c-hpath auto/
-	$(Q)lcm-gen -p $(LCM_TYPES) --ppath .
+clean: 
+	$(Q)./clean.sh &>/dev/null
 
 megaclean:
 	$(MAKE) -C upstream clean
