@@ -161,8 +161,8 @@ class LCMEnum(baseio.ImADictionary):
             estr += "#define " + self.name.upper() + "\n"
         estr += "typedef " 
         estr += "enum {\n"
-        for f in self.fields.rsplit(','):
-            estr += "  " + f.strip() + ",\n"
+        for (k,f) in enumerate(self.fields.rsplit(',')):
+            estr += "  " + f.strip() + " = "+str(k)+",\n"
         estr += "} "
         if self.has_key('typedef'):
             estr += self.typedef
