@@ -11,6 +11,7 @@ rm -f telemetry/*.c telemetry/*.h &>/dev/null
 rm -f settings/*.c settings/*.h
 rm -f airframes/*.h
 rm -f stubs/*.c stubs/*.o
+rm -f lib/*.a &>/dev/null
 rm -f *_settings.h
 rm -f *_telemetry.h *_telemetry.c &>/dev/null
 rm -f lcm_telemetry_auto.h lcm_settings_auto.h

@@ -21,7 +21,7 @@ AP_PROJECT_ROOT ?= ..
 
 WARNINGFLAGS = -Wall -Wextra -Werror -std=gnu99
 AUTOFLAGS = -Wno-unused-parameter
-DEBUGFLAGS = -g -DDT=0.01
+DEBUGFLAGS = -g -DDT=0.004
 OPTFLAGS = 
 
 LIB_DIR = lib
@@ -50,7 +50,7 @@ Q ?= @
 all: 
 	$(Q)$(MAKE) -C . clean
 	$(Q)$(MAKE) -C . gen
-	$(Q)$(MAKE) -C . compile -j
+	$(Q)$(MAKE) -C . compile -j100
 
 engage: all
 
@@ -60,13 +60,26 @@ lcm:
 
 gen: 
 	@echo
-	@echo ----- Generating LCM types and custom C interface. -----
 	@echo
-	$(Q)python lcmgen.py $(AP_PROJECT_ROOT)/$(XML_PATH)/airframes/$(AIRCRAFT).xml 
+	$(Q)$(MAKE) -C . codegen
+	$(Q)$(MAKE) -C . constgen
 	$(Q)$(MAKE) -C . lcm
 	@echo
 	@echo ----- Done generating code.  -----
 	@echo
+
+codegen:
+	@echo ----- Generating LCM types -----
+	@echo ----- Generating custom C interface -----
+	@echo ----- Generating custom Python interface -----
+	@echo ----- Generating custom Octave interface -----
+	$(Q)python codegen.py $(AIRCRAFT)
+
+constgen: 
+	@echo
+	@echo ----- Generating airframe constants for $(AIRCRAFT)-----
+	@echo
+	$(Q)python constgen.py $(AIRCRAFT)
 
 # This builds a shared library. 
 # $(Q)$(CC) $(CFLAGS) $(MKLIBFLAGS) $< -o $(LIB_DIR)/$(LIBNAME).so
