@@ -27,7 +27,7 @@ class TelemetryMessage(baseio.CHeader, baseio.CCode, baseio.ImADictionary):
         self.timestep = genconfig.timestep
         self.lcm_folder = genconfig.lcm_folder
         if not self.has_key('channel'):
-            self.channel = "%(classname)s_%(type)s_%(varname)s"
+            self.channel = "%(classname)s_%(type)s_%(varname)s" % self
 
     def to_telemetry_function(self):
         """This emits a small function that relies on a variable being
