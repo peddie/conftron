@@ -148,8 +148,7 @@ class LCMEnum(baseio.ImADictionary):
 
     def to_lcm_callback(self, prefix=""):
         def cb(msg):
-            print "In yer callback; msg =", msg
-            return [{prefix + self.name : msg}]
+            return [(prefix + self.name, msg)]
         return cb
 
     def to_c(self):
