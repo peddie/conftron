@@ -55,7 +55,9 @@ all:
 engage: all
 
 lcm:
+	@echo ----- Generating LCM C interface -----
 	$(Q)lcm-gen -c $(LCM_TYPES) --c-cpath auto/ --c-hpath auto/
+	@echo ----- Generating LCM Python interface -----
 	$(Q)lcm-gen -p $(LCM_TYPES) --ppath python/
 
 gen: 
@@ -76,9 +78,7 @@ codegen:
 	$(Q)python codegen.py $(AIRCRAFT)
 
 constgen: 
-	@echo
 	@echo ----- Generating airframe constants for $(AIRCRAFT)-----
-	@echo
 	$(Q)python constgen.py $(AIRCRAFT)
 
 # This builds a shared library. 
