@@ -59,29 +59,63 @@ class StructField(baseio.ImADictionary):
             return self.to_lcm_callback_single(prefix)
 
     def to_lcm_callback_single(self, prefix):
+        """Creates a function `return_primitive' that returns a flat
+        array of (name, value) pairs.  `name' indicates what's being
+        plotted; `value' is the part of the message that goes with
+        that name (e.g. a struct member or array element).
+        `return_array' takes an lcm message as an argument.
+        """
         if self.type in lcm_primitives:
             def return_primitive(msg):
                 return [(prefix + self.name, msg)]
             return return_primitive
         else:
             nextfn = self.cl.make_lcm_callback(self.type, prefix + self.name + "_")
-            def return_another_struct(msg):
+            def return_primitive(msg):
                 return nextfn(msg)
-            return return_another_struct
+            return return_primitive
+
+    def lcm_unroll_array(self, name, sizes):
+        """Creates a flat array of (name, function) pairs.  `name' is
+        the correct field label, e.g. e2u_P_27 for e2u.P[2][7], and
+        `function' returns the specified element (e.g. [2][7]) from a
+        message (passed as its argument).
+        """
+        ## Guido is on my shit list today.  Values you loop over (`n'
+        ## in this case) are fixed in value only at the end of the
+        ## loop scope?  I WANT MY LET OVER LAMBDA, YOU ASSHOLE!
+        if len(sizes) == 1:     
+            out = []
+            for n in xrange(int(sizes[0])):
+                out.append((name + "_" + str(n), lambda msg, msgidx=n: msg[msgidx]))
+            return out
+        else:
+            arrout = []
+            for n in xrange(int(sizes[0])):
+                unroll = self.lcm_unroll_array(name + "_" + str(n), sizes[1:])
+                arrout.extend([((lambda c=n: c)(), ur) for ur in unroll])
+            return [(pr[0], lambda msg, c=n, pv=pr: pv[1](msg[c])) for n, pr in arrout]
                 
     def to_lcm_callback_array(self, prefix):
+        """Creates a function `return_array' that returns a flat array
+        of (name, value) pairs.  `name' indicates what's being
+        plotted; `value' is the part of the message that goes with
+        that name (e.g. a struct member or array element).
+        `return_array' takes an lcm message as an argument.
+        """
+        arrlambda = self.lcm_unroll_array(prefix + self.name, self.sizes)
         if self.type in lcm_primitives:
             def return_array(msg):
-                return [(prefix + self.name + "_" + str(n), msg[n]) for n in xrange(int(self.sizes[0]))]
+                out = [(pr[0], pr[1](msg)) for pr in arrlambda]
+                return out
             return return_array
         else:
-            nextfns = []
-            for n in xrange(int(self.sizes[0])):
-                nextfns.append((n, self.cl.make_lcm_callback(self.type, prefix + self.name + "_" + str(n) + "_")))
+            nextfns = [(self.cl.make_lcm_callback(self.type, pr[0]+"_"), pr[1]) for pr in arrlambda]
             def return_array(msg):
-                return [f(msg[n]) for n, f in nextfns]
+                out = []
+                [out.extend(nextfun(unpack(msg))) for nextfun, unpack in nextfns]
+                return out
             return return_array
-                
 
 class LCMStruct(baseio.ImADictionary):
     """This is the native format for structs we need to use.  You can
