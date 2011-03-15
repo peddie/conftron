@@ -142,6 +142,7 @@ class LCMStruct(baseio.ImADictionary):
 class LCMEnum(baseio.ImADictionary):
     def __init__(self, enum, clname):
         self.__dict__.update(enum.attrib)
+        self.fields = [f.strip() for f in self.fields.rsplit(',')]
         self.classname = clname
         self.type = self.name
         self.lcm_folder = genconfig.lcm_folder
@@ -166,8 +167,8 @@ class LCMEnum(baseio.ImADictionary):
             estr += "#define " + self.name.upper() + "\n"
         estr += "typedef " 
         estr += "enum {\n"
-        for (k,f) in enumerate(self.fields.rsplit(',')):
-            estr += "  " + f.strip() + " = "+str(k)+",\n"
+        for (k,f) in enumerate(self.fields):
+            estr += "  " + f + " = "+str(k)+",\n"
         estr += "} "
         if self.has_key('typedef'):
             estr += self.typedef
@@ -189,9 +190,9 @@ class LCMEnum(baseio.ImADictionary):
         if self.has_key('comment'):
             estr += "/* " + self.comment + " */\n"
         estr += "typedef int " + self.name + ";\n"
-        defenum = zip(self.fields.rsplit(','), range(len(self.fields)-1))
+        defenum = zip(self.fields, range(len(self.fields)-1))
         for f, n in defenum:
-            estr += "#define " + f.strip() + " " + str(n) + "\n"
+            estr += "#define " + f + " " + str(n) + "\n"
         return estr
 
     def to_lcm(self):
