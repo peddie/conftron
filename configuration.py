@@ -82,7 +82,7 @@ class Configuration(baseio.Searchable):
     ## Make lcm_settings_auto.h for inclusion into handwritten files
     def settings_header(self, cf):
         for s in self.settings:
-            cf.write("#include \"%(name)s_settings.h\"\n" % s)
+            cf.write("\n#include \"%(name)s_settings.h\"\n" % s)
             s.settings_includes(cf)
         inits = "".join([s.init_call() for s in self.settings])
         checks = "".join([s.check_call() for s in self.settings])
