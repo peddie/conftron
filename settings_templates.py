@@ -90,7 +90,7 @@ lcm_settings_func_template = """
 void 
 %(classname)s_%(varname)s_setter(const lcm_recv_buf_t *rbuf __attribute__((unused)),  
                                  const char *channel __attribute__((unused)),                 
-                                 const %(classname)s_%(type)s *new,                                      
+                                 const %(classname)s_%(type)s *new_data,                                      
                                  void *user __attribute__((unused)))
 {
 %(field_settings)s
@@ -99,34 +99,34 @@ void
 """
 
 lcm_settings_field_template_mm = """
-  if (new == NULL) {
+  if (new_data == NULL) {
     %(varname)s.%(name)s = %(default)s;
   } else {
-    if (new->%(name)s > %(max)s)
+    if (new_data->%(name)s > %(max)s)
       %(varname)s.%(name)s = %(max)s;
-    else if (new->%(name)s < %(min)s)
+    else if (new_data->%(name)s < %(min)s)
       %(varname)s.%(name)s = %(min)s;
     else
-      %(varname)s.%(name)s = new->%(name)s;
+      %(varname)s.%(name)s = new_data->%(name)s;
   }
 """
 
 lcm_settings_field_template_absbound = """
-  if (new == NULL) {
+  if (new_data == NULL) {
     %(varname)s.%(name)s = %(default)s;
   } else {
-    if (fabs(new->%(name)s) > %(absmax)s)
-      %(varname)s.%(name)s = copysign(%(absmax)s, new->%(name)s);
+    if (fabs(new_data->%(name)s) > %(absmax)s)
+      %(varname)s.%(name)s = copysign(%(absmax)s, new_data->%(name)s);
     else
-      %(varname)s.%(name)s = new->%(name)s;
+      %(varname)s.%(name)s = new_data->%(name)s;
   }
 """
 
 lcm_send_settings_template = """
 void
-%(classname)s_%(varname)s_set(%(classname)s_%(type)s *new)
+%(classname)s_%(varname)s_set(%(classname)s_%(type)s *new_data)
 {
-  %(classname)s_lcm_send(new, %(type)s);
+  %(classname)s_lcm_send(new_data, %(type)s);
 }
 """
 
