@@ -151,7 +151,28 @@ class TagInheritance(ImADictionary):
 class Searchable():
     def __init__(self):
         pass
+
     def _search(self, collection, searchname):
-        return (i for i in collection if i.name == searchname).next()
-        
-        
+        try:
+            return (i for i in collection if i.name == searchname).next()
+        except StopIteration:
+            return None
+
+    def _recsearch(self, collection, searchname):
+        try:
+            return (i for i in collection if i.name == searchname).next()
+        except StopIteration:
+            try:
+                return (i.search(searchname) for i in collection if i.search(searchname)).next()
+            except StopIteration:
+                return None
+
+    def _dictsearch(self, dictionary, searchname):
+        if dictionary.has_key(searchname):
+            return dictionary[searchname]
+
+    def _dictrecsearch(self, dictionary, searchname):
+        if dictionary.has_key(searchname):
+            return dictionary[searchname]
+        else:
+            return (v for k,v in dictionary.iteritems() if v.search(searchname)).next()

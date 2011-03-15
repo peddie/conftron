@@ -20,12 +20,14 @@
 from xml.etree import ElementTree as ET
 import xml.parsers.expat as expat
 from os.path import dirname
+import re
 
 import baseio
 import genconfig
 
-class Constant():
+class Constant(baseio.ImADictionary, baseio.Searchable):
     def __init__(self, node, prefix):
+        self.name = ""
         if prefix != '':
             op = prefix.rstrip('_') + "." 
         else:
@@ -52,6 +54,11 @@ class Constant():
         if node.attrib.has_key('subtree'):
             for k in node.attrib['subtree']:
                 self.sub[k.attrib['name']] = Constant(k, self.prefix)
+        if len(self.sub) == 0:
+            self.name = node.attrib['name']
+            
+    def search(self, searchname):
+        return self._dictrecsearch(self.sub, searchname)
 
     def to_define_h(self, cf):
         for n, d in self.defines.iteritems():
@@ -64,10 +71,22 @@ class Constant():
         for n, s in self.sub.iteritems():
             s.to_octave_struct(cf)
 
-class Constants(baseio.CHeader, baseio.OctaveCode):
+class Constants(baseio.CHeader, baseio.OctaveCode, baseio.Searchable):
     def __init__(self, tree):
         self.name = tree.attrib['name']
         self.nodes = [Constant(tt, '') for tt in tree.getchildren()]
+
+    def search(self, searchname):
+        return self._recsearch(self.nodes, searchname)
+
+    def textsearch(self, searchstring):
+        pp = re.compile(searchstring)
+        def searchme(x):
+            found = pp.search(x.prefix + x.name)
+            found.extend(x.textsearch(searchstring))
+            return found
+
+        return filter(searchme, self.nodes)
 
     def to_define_h(self):
         def define_h_writer(cf):
@@ -83,7 +102,7 @@ class Constants(baseio.CHeader, baseio.OctaveCode):
         print "writing octave struct file for ", self.name
         self.to_octave_code("airframes/" + self.name, octave_struct_writer)
                 
-class AirframeConstants():
+class AirframeConstants(baseio.Searchable):
     def __init__(self, airframefile):
         af = genconfig.airframe_config_folder + airframefile + ".xml"
         self.defines = self.parse_airframe(af)
@@ -91,6 +110,18 @@ class AirframeConstants():
     def write(self):
         self.defines.to_define_h()
         self.defines.to_octave_structs()
+
+    def search(self, searchname):
+        return self._search(self.defines, searchname)
+        
+    def textsearch(self, searchname):
+        pp = re.compile(searchstring)
+        def searchme(x):
+            found = pp.search(x.name)
+            found.extend(x.textsearch(searchstring))
+            return found
+
+        return filter(searchme, self.defines)
 
     def parse_airframe(self, airframefile):
         try: 
