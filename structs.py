@@ -79,9 +79,7 @@ class StructField(baseio.ImADictionary):
             for n in xrange(int(self.sizes[0])):
                 nextfns.append((n, self.cl.make_lcm_callback(self.type, prefix + self.name + "_" + str(n) + "_")))
             def return_array(msg):
-                out = []
-                [out.extend(f(msg[n])) for n, f in nextfns]
-                return out
+                return [f(msg[n]) for n, f in nextfns]
             return return_array
                 
 
