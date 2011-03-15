@@ -20,9 +20,10 @@
 import genconfig, baseio
 from settings_templates import *
 
-class LCMSettingField(baseio.ImADictionary):
+class LCMSettingField(baseio.TagInheritance):
     def __init__(self, hsh, parent):
         self.__dict__.update(hsh)
+        self._inherit(parent)
         self.parent = parent
         self.classname = parent.classname
         parent.die += self._filter()
@@ -115,12 +116,14 @@ class LCMSettingField(baseio.ImADictionary):
                 die += 1
         return die
 
-class LCMSetting(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.ImADictionary):
-    def __init__(self, hsh, fields):
-        self.__dict__.update(hsh)
+class LCMSetting(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.TagInheritance):
+    def __init__(self, s, parent):
+        self.__dict__.update(s.attrib)
+        self.classname = parent.name
+        self._inherit(parent)
         self.lcm_folder = genconfig.lcm_folder
         self.die = 0
-        self.fields = [LCMSettingField(dict(f.attrib, **{'varname':self.varname}), self) for f in fields]
+        self.fields = [LCMSettingField(dict(f.attrib, **{'varname':self.varname}), self) for f in s.getchildren()]
         self.field_settings = "\n".join([f.field_setting() for f in self.fields])
 
     def to_settings_file(self):
@@ -148,7 +151,7 @@ class LCMSetting(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.ImADiction
     def to_settings_prototype(self, cf):
         cf.write(lcm_settings_prototype % self)
 
-class Settings(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.ImADictionary, baseio.Searchable):
+class Settings(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.TagInheritance, baseio.Searchable):
     def __init__(self, name, children, class_structs):
         self.name = name
         self.classname = name
@@ -172,7 +175,7 @@ class Settings(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.ImADictionar
 
     def _filter_settings(self, structs):
         die = 0
-        outstructs = [LCMSetting(dict(s.attrib, **{'classname':self.name}), s.getchildren()) for s in structs]
+        outstructs = [LCMSetting(s, self) for s in structs]
         die = sum([s.die for s in outstructs])
         if die:
             print "Lots of settings errors detected; cannot continue code generation."

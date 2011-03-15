@@ -17,6 +17,8 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 ## 02110-1301, USA.
 
+import genconfig
+
 h_file_head = """
 /* This file is part of conftron.  
  * 
@@ -123,6 +125,10 @@ class ImADictionary():
         pass
     def __getitem__(self, item):
         return getattr(self, item)
+
+    def __setitem__(self, item, value):
+        return setattr(self, item, value)
+
     def has_key(self, key):
         try:
             getattr(self, key)
@@ -130,6 +136,17 @@ class ImADictionary():
             return False
         else:
             return True
+
+class TagInheritance(ImADictionary):
+    reserved = genconfig.reserved_tag_names
+    def __init__(self):
+        pass
+
+    def _inherit(self, parent):
+        for tag, value in parent.__dict__.iteritems():
+            if not tag in self.reserved:
+                if not self.has_key(tag):
+                    self[tag] = value
 
 class Searchable():
     def __init__(self):

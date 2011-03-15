@@ -21,9 +21,10 @@ import genconfig, baseio
 
 lcm_primitives = ["double", "float", "int32_t", "int16_t", "int8_t"]
 
-class StructField(baseio.ImADictionary):
-    def __init__(self, attrib):
+class StructField(baseio.TagInheritance):
+    def __init__(self, attrib, parent):
         self.__dict__.update(attrib)
+        self._inherit(parent)
         if self.has_key('array'):
             self.sizes = self.array.rsplit(",")
 
@@ -117,13 +118,14 @@ class StructField(baseio.ImADictionary):
                 return out
             return return_array
 
-class LCMStruct(baseio.ImADictionary):
+class LCMStruct(baseio.TagInheritance):
     """This is the native format for structs we need to use.  You can
     convert to and from XML, C, LCM and Python."""
-    def __init__(self, msg, classname):
+    def __init__(self, msg, parent):
         self.__dict__.update(msg.attrib)
-        self.members = [StructField(dict(m.attrib, **{'cl':self.cl})) for m in msg.getchildren()]
-        self.classname = classname
+        self._inherit(parent)
+        self.members = [StructField(dict(m.attrib, **{'cl':self.cl}), self) for m in msg.getchildren()]
+        self.classname = parent.name
         self.type = self.name
         self.lcm_folder = genconfig.lcm_folder
 
@@ -173,12 +175,13 @@ class LCMStruct(baseio.ImADictionary):
         the enums since LCM doesn't implement enum types."""
         print "Compiling XML directly to python classes is not implemented. --MP"
 
-class LCMEnum(baseio.ImADictionary):
-    def __init__(self, enum, clname):
+class LCMEnum(baseio.TagInheritance):
+    def __init__(self, enum, parent):
         self.__dict__.update(enum.attrib)
         self.fields = [f.strip() for f in self.fields.rsplit(',')]
-        self.classname = clname
+        self.classname = parent.name
         self.type = self.name
+        self._inherit(parent)
         self.lcm_folder = genconfig.lcm_folder
 
     def to_lcm_callback(self, prefix=""):
@@ -240,7 +243,8 @@ class LCMEnum(baseio.ImADictionary):
         print "Compiling XML directly to python classes is not implemented. --MP"
 
 class CStructClass(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.Searchable):
-    def __init__(self, name, structs):
+    def __init__(self, name, cl, structs):
+        self.__dict__.update(cl.attrib)
         self.name = name
         self.structs = self._filter_structs(structs)
 
@@ -265,10 +269,10 @@ class CStructClass(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.Searchab
         for struct in structs:
             if struct.tag == 'message' or struct.tag == 'struct':
                 struct.attrib['cl'] = self
-                outstructs.append(LCMStruct(struct, self.name))
+                outstructs.append(LCMStruct(struct, self))
             elif struct.tag == 'enum':
                 struct.attrib['cl'] = self
-                outstructs.append(LCMEnum(struct, self.name))
+                outstructs.append(LCMEnum(struct, self))
             else:
                 print baseio.parse_type_error % {"msg_tag":struct.tag, "filename":"types"}
         return outstructs

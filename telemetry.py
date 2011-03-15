@@ -20,9 +20,12 @@
 import genconfig, baseio
 from telemetry_templates import *
 
-class TelemetryMessage(baseio.CHeader, baseio.CCode, baseio.ImADictionary):
-    def __init__(self, hsh):
+class TelemetryMessage(baseio.CHeader, baseio.CCode, baseio.TagInheritance):
+    def __init__(self, hsh, parent):
         self.__dict__.update(hsh)
+        self._inherit(parent)
+        self.simrate = self.sim
+        self.flightrate = self.flight
         self.sim_flag = genconfig.sim_flag
         self.timestep = genconfig.timestep
         self.lcm_folder = genconfig.lcm_folder
@@ -60,13 +63,14 @@ void %(classname)s_%(varname)s_send(int counter); \n""" % self
 
 
 
-class Telemetry(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.ImADictionary, baseio.Searchable):
+class Telemetry(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.TagInheritance, baseio.Searchable):
     """This class represents a Telemetry class as taken from the XML
     config."""
-    def __init__(self, classname, msgs, ratedict, class_structs):
+    def __init__(self, classname, tel, ratedict, class_structs):
         self.classname = classname
         self.__dict__.update(ratedict)
-        self.messages = self._filter_messages(msgs)
+        self.__dict__.update(tel.attrib)
+        self.messages = self._filter_messages(tel.getchildren())
         self.sim_flag = genconfig.sim_flag
         self.timestep = genconfig.timestep
         self.send_all = "\n".join(["  " + m.classname + "_" + m.varname + "_send(counter);" for m in self.messages])
@@ -95,6 +99,12 @@ class Telemetry(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.ImADictiona
     def run_call(self):
         return lcm_run_call_template % self + "\n"
 
+    def _inherit(self, child):
+        for tag, value in self.__dict__.iteritems():
+            if not tag in ['name', 'varname', 'type']:
+                if not child.has_key(tag):
+                    child[tag] = value
+
     def _filter_messages(self, msgs):
         outstructs = []
         for msg in msgs:
@@ -103,10 +113,7 @@ class Telemetry(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.ImADictiona
                     msg.attrib['flight'] = self.flightrate
                 if not msg.attrib.has_key('sim'):
                     msg.attrib['sim'] = self.simrate
-                outstructs.append(TelemetryMessage(dict(msg.attrib, **{'classname':self.classname,
-                                                                       'simrate':msg.attrib['sim'], 
-                                                                       'flightrate':msg.attrib['flight'],
-                                                                       'varname':msg.attrib['name']})))
+                outstructs.append(TelemetryMessage(dict(msg.attrib, **{'varname':msg.attrib['name']}), self))
             else:
                 print baseio.parse_type_error % {"msg_tag":msg.tag, "filename":"telemetry"}
         return outstructs

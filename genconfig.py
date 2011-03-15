@@ -35,4 +35,4 @@ airframe_config_folder = config_folder + "airframes/"
 lcm_settings_autogen = "lcm_settings_auto"
 lcm_telemetry_autogen = "lcm_telemetry_auto"
 classes_file = "classes.dat"
-
+reserved_tag_names = ['array', 'comment', 'unit', 'ptr', 'cl', 'name', 'varname', 'type', 'absmax', 'min', 'max', 'fields', 'structs', 'messages', 'settings']

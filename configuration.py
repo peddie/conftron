@@ -100,7 +100,7 @@ class Configuration(baseio.Searchable):
 
     def _create_telemetry_class(self, clname, tel, msgs):
         return telemetry.Telemetry(clname, 
-                                   tel.getchildren(), 
+                                   tel,
                                    {'simrate':tel.attrib['sim'], 
                                     'flightrate':tel.attrib['flight']}, 
                                    msgs)
@@ -133,7 +133,7 @@ class Configuration(baseio.Searchable):
             if structh.has_key(clname):
                 msgs = structh[clname].getchildren()
                 [msgs.insert(0, b) for b in basestructs]
-                csc = structs.CStructClass(clname, msgs)
+                csc = structs.CStructClass(clname, structh[clname], msgs)
                 cscs = csc.structs
                 self.structs.append(csc)
             if seth.has_key(clname):
