@@ -151,6 +151,12 @@ class LCMEnum(baseio.ImADictionary):
             return [(prefix + self.name, msg.val)]
         return cb
 
+    def get_fields_with_indices(self):
+        return dict(zip(self.fields, range(len(self.fields))))
+    
+    def get_indices_with_fields(self):
+        return dict(zip(range(len(self.fields)), self.fields))
+
     def to_c(self):
         estr = ""
         if self.has_key('comment'):
