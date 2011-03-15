@@ -60,7 +60,7 @@ void %(classname)s_%(varname)s_send(int counter); \n""" % self
 
 
 
-class Telemetry(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.ImADictionary):
+class Telemetry(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.ImADictionary, baseio.Searchable):
     """This class represents a Telemetry class as taken from the XML
     config."""
     def __init__(self, classname, msgs, ratedict, class_structs):
@@ -73,11 +73,16 @@ class Telemetry(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.ImADictiona
         self.class_struct_pointers = self._class_struct_pointers(class_structs)
         self.class_struct_includes = self._class_struct_includes(class_structs)
 
+    def search(self, searchname):
+        return self._search(self.messages, searchname)
+
     def get_lcm_channel(self, name):
-        try: return (i for i in self.messages if i.name == name).next().channel
+        try: ff = self.search(name)
         except StopIteration: 
             print "Error!  No message by the name of %(name) in class %(classname)!" % {'name':name, 'classname':self.classname}
             return None
+        else:
+            return ff.channel
 
     def codegen(self):
         self.to_telemetry_h()

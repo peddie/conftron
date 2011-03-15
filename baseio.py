@@ -131,3 +131,10 @@ class ImADictionary():
         else:
             return True
 
+class Searchable():
+    def __init__(self):
+        pass
+    def _search(self, collection, searchname):
+        return (i for i in collection if i.name == searchname).next()
+        
+        

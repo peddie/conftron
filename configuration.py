@@ -22,7 +22,7 @@ import xml.parsers.expat as expat
 
 import genconfig, baseio, telemetry, structs, settings
 
-class Configuration():
+class Configuration(baseio.Searchable):
     def __init__(self, airframename=None):
         self.structs = []
         self.telemetry = []
@@ -36,8 +36,20 @@ class Configuration():
 
         self.parse_types()
 
+    def search_structs(self, classname, searchname):
+        scl = self._search(self.structs, classname)
+        return scl.search(searchname)
+
+    def search_telem(self, classname, searchname):
+        scl = self._search(self.telemetry, classname)
+        return scl.search(searchname)
+
+    def search_settings(self, classname, searchname):
+        scl = self._search(self.settings, classname)
+        return scl.search(searchname)
+
     def make_lcm_handler(self, name, mtype, mclass):
-        try: cls = (i for i in self.structs if i.name == mclass).next().make_lcm_callback(mtype)
+        try: cls = self._search(self.structs, mclass).make_lcm_callback(mtype)
         except StopIteration: 
             print "Error!  No struct class by the name of %(class) in configuration!" % {'classname':mclass}
             return None

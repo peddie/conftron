@@ -204,16 +204,22 @@ class LCMEnum(baseio.ImADictionary):
     def to_python(self):
         print "Compiling XML directly to python classes is not implemented. --MP"
 
-class CStructClass(baseio.CHeader, baseio.LCMFile, baseio.CCode):
+class CStructClass(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.Searchable):
     def __init__(self, name, structs):
         self.name = name
         self.structs = self._filter_structs(structs)
 
+    def search(self, searchname):
+        return self._search(self.structs, searchname)
+
     def make_lcm_callback(self, name, prefix=""):
-        try: return (i for i in self.structs if i.name == name).next().to_lcm_callback(prefix)
+        try: 
+            ff = self.search(name)
         except StopIteration: 
             print "Error!  No struct by the name of %(name) in class %(classname)!" % {'name':name, 'classname':self.name}
             return None
+        else:
+            return ff.to_lcm_callback(prefix)
 
     def codegen(self):
         self.to_structs_h()

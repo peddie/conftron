@@ -148,7 +148,7 @@ class LCMSetting(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.ImADiction
     def to_settings_prototype(self, cf):
         cf.write(lcm_settings_prototype % self)
 
-class Settings(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.ImADictionary):
+class Settings(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.ImADictionary, baseio.Searchable):
     def __init__(self, name, children, class_structs):
         self.name = name
         self.classname = name
@@ -156,6 +156,9 @@ class Settings(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.ImADictionar
         self.class_struct_includes = self._class_struct_includes(class_structs)
         self.init_calls = "\n".join([lcm_settings_init_call_template % s for s in self.settings])
         self.null_calls = "\n".join([lcm_settings_init_null_template % s for s in self.settings])
+
+    def search(self, searchname):
+        return self._search(self.settings, searchname)
 
     def codegen(self):
         self.to_settings_h()
