@@ -18,6 +18,7 @@
 ## 02110-1301, USA.
 
 import genconfig, baseio
+from structs_templates import *
 
 lcm_primitives = ["double", "float", "int32_t", "int16_t", "int8_t"]
 
@@ -118,7 +119,7 @@ class StructField(baseio.TagInheritance):
                 return out
             return return_array
 
-class LCMStruct(baseio.TagInheritance):
+class LCMStruct(baseio.TagInheritance, baseio.OctaveCode):
     """This is the native format for structs we need to use.  You can
     convert to and from XML, C, LCM and Python."""
     def __init__(self, msg, parent):
@@ -166,6 +167,59 @@ class LCMStruct(baseio.TagInheritance):
         outstr += "}\n"
         return outstr
 
+    def to_eml(self):
+        primitives_map = {'double':'double', 'float':'double', 'int8_t':'int8', 'int16_t':'int16', 'int32_t':'int32'}
+ 
+        def lcm_send_output_f(cf):
+            cf.write(eml_lcm_send_template % self)
+
+        def lcm_send_dummy_output_f(cf):
+            cf.write(eml_lcm_send_dummy_template % self)
+
+        def constructor_output_f(cf):
+            cf.write("function %(type)s = emlc_%(type)s() %%#eml\n\n" % self)
+            for m in self.members:
+                # primitives
+                if m['type'] in primitives_map.keys():
+                    m['matlab_type'] = primitives_map[m['type']]
+                    if m['has_key']('array'): # arrays
+                        if len(m['array']) == 1:
+                            cf.write(self.type+".%(name)s = %(matlab_type)s(zeros([%(array)s,1]));\n" % m)
+                        else:
+                            cf.write(self.type+".%(name)s = %(matlab_type)s(zeros([%(array)s]));\n" % m)
+                    else: # scalars
+                        cf.write(self.type+".%(name)s = %(matlab_type)s(0);\n" % m)
+                else: # not primitive
+                    if m['has_key']('array'): # arrays
+                        if len(m['array']) > 1:
+                            cf.write(self.type+".%(name)s = repmat(emlc_%(type)s(), [%(array)s]);\n" % m)
+                        else:
+                            cf.write(self.type+".%(name)s = repmat(emlc_%(type)s(), [%(array)s]);\n" % m)
+                    else: # scalars
+                        cf.write(self.type+".%(name)s = emlc_%(type)s();\n" % m)
+            cf.write("\nend\n")
+
+        def safecopy_output_f(cf):
+            cf.write('function %(type)s_out_ = safecopy_%(type)s(%(type)s_in_, n) %%#eml\n\n' % self)
+            cf.write('assert(isequal(size(%(type)s_in_), n));\n\n' % self)
+            cf.write('%(type)s_out_ = eml.nullcopy(repmat(emlc_%(type)s(), n))\n\n' % self)
+            cf.write('for k=1:prod(n)\n')
+            for m in self['members']:
+                if m['type'] in primitives_map.keys(): # primitive type
+                    cf.write(("  "+self.type+"_out_(k).%(name)s = "+self.type+"_in_(k).%(name)s;\n") % m)
+                else: # non-primitive type
+                    if m['has_key']('array'): # arrays
+                        cf.write(("  "+self.type+"_out_(k).%(name)s = safecopy_%(type)s("+self.type+"_in_.%(name)s, [%(array)s]));\n") % m)
+                    else: # scalars
+                        cf.write(("  "+self.type+"_out_(k).%(name)s = safecopy_%(type)s("+self.type+"_in_.%(name)s, [1]));\n") % m)
+
+            cf.write("end\n\nend\n")
+
+        self.to_octave_code('octave/lcm_send/eml_'+self['type'], lcm_send_output_f)
+        self.to_octave_code('octave/lcm_send_dummy/eml_'+self['type'], lcm_send_dummy_output_f)
+        self.to_octave_code('octave/constructors/eml_'+self['type'], constructor_output_f)
+        self.to_octave_code('octave/safecopy/safecopy_'+self['type'], safecopy_output_f)
+
     def to_include(self):
         pass
         
@@ -175,7 +229,7 @@ class LCMStruct(baseio.TagInheritance):
         the enums since LCM doesn't implement enum types."""
         print "Compiling XML directly to python classes is not implemented. --MP"
 
-class LCMEnum(baseio.TagInheritance):
+class LCMEnum(baseio.TagInheritance, baseio.OctaveCode):
     def __init__(self, enum, parent):
         self.__dict__.update(enum.attrib)
         self.fields = [f.strip() for f in self.fields.rsplit(',')]
@@ -232,6 +286,37 @@ class LCMEnum(baseio.TagInheritance):
             estr += "#define " + f + " " + str(n) + "\n"
         return estr
 
+    def to_eml(self):
+        primitives_map = {'double':'double', 'float':'double', 'int8_t':'int8', 'int16_t':'int16', 'int32_t':'int32'}
+ 
+        def lcm_send_output_f(cf):
+            cf.write(eml_lcm_send_template % self)
+
+        def lcm_send_dummy_output_f(cf):
+            cf.write(eml_lcm_send_dummy_template % self)
+
+        def constructor_output_f(cf):
+            cf.write("function %(type)s = emlc_%(type)s() %%#eml\n\n" % self)
+            cf.write(self.type+".%(name)s = int32(0);\n")
+            cf.write("\nend\n")
+
+        def safecopy_output_f(cf):
+            cf.write('function %(type)s_out_ = safecopy_%(type)s(%(type)s_in_, n) %%#eml\n\n' % self)
+            cf.write('assert(isequal([1,1], n));\n\n' % self)
+            cf.write(('%(type)s_out_ = int32(0);\n\n') % self)
+            cf.write('switch %(type)s_in_\n' % self)
+            for v,k in self['get_indices_with_fields']().iteritems():
+                cf.write('  case \''+k+'\'\n')
+                cf.write(('    %(type)s_out_ = int32('+str(v)+');\n') % self)
+            cf.write('  otherwise\n')
+            cf.write('    error(\'lcm enum hack FAIL\');\n')
+            cf.write("end\n\nend\n")
+
+        self.to_octave_code('octave/lcm_send/lcm_send_'+self['type'], lcm_send_output_f)
+        self.to_octave_code('octave/lcm_send_dummy/lcm_send_'+self['type'], lcm_send_dummy_output_f)
+        self.to_octave_code('octave/constructors/emlc_'+self['type'], constructor_output_f)
+        self.to_octave_code('octave/safecopy/safecopy_'+self['type'], safecopy_output_f)
+
     def to_lcm(self):
         estr = "struct " + self.name + " {\n  int32_t val;\n}\n"
         return estr
@@ -263,6 +348,7 @@ class CStructClass(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.Searchab
     def codegen(self):
         self.to_structs_h()
         self.to_structs_lcm()
+        [s.to_eml() for s in self.structs if s['classname']=='emlc']
 
     def _filter_structs(self, structs):
         outstructs = []

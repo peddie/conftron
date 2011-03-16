@@ -7,6 +7,10 @@ done
 rm -f classes.dat &>/dev/null
 rm -f auto/*.c auto/*.h &>/dev/null
 rm -rf java/* &>/dev/null
+rm -f octave/lcm_send/*.m &>/dev/null
+rm -f octave/lcm_send_dummy/*.m &>/dev/null
+rm -f octave/constructors/*.m &>/dev/null
+rm -f octave/safecopy/*.m &>/dev/null
 rm -rf python/*
 rm -f telemetry/*.c telemetry/*.h &>/dev/null
 rm -f settings/*.c settings/*.h
