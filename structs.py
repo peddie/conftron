@@ -18,7 +18,7 @@
 ## 02110-1301, USA.
 
 import genconfig, baseio
-from structs_templates import *
+from eml_structs_templates import *
 
 lcm_primitives = ["double", "float", "int32_t", "int16_t", "int8_t"]
 
@@ -295,27 +295,32 @@ class LCMEnum(baseio.TagInheritance, baseio.OctaveCode):
         def lcm_send_dummy_output_f(cf):
             cf.write(eml_lcm_send_dummy_template % self)
 
+        def enum_encoder_output_f(cf):
+            cf.write(eml_enum_encoder_template_0 % self)
+            for v,k in self['get_indices_with_fields']().iteritems():
+                cf.write('    case \''+k+'\'\n')
+                cf.write(('        int32_out = int32('+str(v)+');\n') % self)
+            cf.write(eml_enum_encoder_template_1 % self)
+
+        def enum_decoder_output_f(cf):
+            cf.write(eml_enum_decoder_template_0 % self)
+            for v,k in self['get_indices_with_fields']().iteritems():
+                cf.write('    case '+str(v)+'\n')
+                cf.write(('        string_out = \''+k+'\';\n') % self)
+            cf.write(eml_enum_decoder_template_1 % self)
+
         def constructor_output_f(cf):
-            cf.write("function %(type)s = emlc_%(type)s() %%#eml\n\n" % self)
-            cf.write(self.type+".%(name)s = int32(0);\n")
-            cf.write("\nend\n")
+            cf.write(eml_enum_constructor_template % self)
 
         def safecopy_output_f(cf):
-            cf.write('function %(type)s_out_ = %(classname)s_safecopy_%(type)s(%(type)s_in_, n) %%#eml\n\n' % self)
-            cf.write('assert(isequal([1,1], n));\n\n' % self)
-            cf.write(('%(type)s_out_ = int32(0);\n\n') % self)
-            cf.write('switch %(type)s_in_\n' % self)
-            for v,k in self['get_indices_with_fields']().iteritems():
-                cf.write('  case \''+k+'\'\n')
-                cf.write(('    %(type)s_out_ = int32('+str(v)+');\n') % self)
-            cf.write('  otherwise\n')
-            cf.write('    error(\'lcm enum hack FAIL\');\n')
-            cf.write("end\n\nend\n")
+            cf.write(eml_enum_safecopy_template % self)
 
         self.to_octave_code('octave/lcm_send/'+self['classname']+'_lcm_send_'+self['type'], lcm_send_output_f)
         self.to_octave_code('octave/lcm_send_dummy/'+self['classname']+'_lcm_send_'+self['type'], lcm_send_dummy_output_f)
         self.to_octave_code('octave/constructors/'+self['classname']+'_'+self['type'], constructor_output_f)
         self.to_octave_code('octave/safecopy/'+self['classname']+'_safecopy_'+self['type'], safecopy_output_f)
+        self.to_octave_code('octave/enum_encoders/encode_%(classname)s_%(type)s' % self, enum_encoder_output_f)
+        self.to_octave_code('octave/enum_decoders/decode_%(classname)s_%(type)s' % self, enum_decoder_output_f)
 
     def to_lcm(self):
         estr = "struct " + self.name + " {\n  int32_t val;\n}\n"
