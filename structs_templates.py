@@ -18,9 +18,9 @@
 ## 02110-1301, USA.
 
 eml_lcm_send_template = """\
-function lcm_send_%(type)s( %(type)s_in ) %%#eml
+function %(classname)s_lcm_send_%(type)s( %(type)s_in ) %%#eml
 
-%(type)s_ = safecopy_%(type)s( %(type)s_in );
+%(type)s_ = %(classname)s_safecopy_%(type)s( %(type)s_in, [1,1] );
 
 eml.ceval('emlc_lcm_send_%(type)s', eml.rref(%(type)s_in));
 
@@ -28,7 +28,7 @@ end
 """
 
 eml_lcm_send_dummy_template = """\
-function lcm_send_%(type)s( %(type)s_in ) %%#eml
+function %(classname)s_lcm_send_%(type)s( %(type)s_in ) %%#eml
 
 %% dummy file to keep simulink from choking
 

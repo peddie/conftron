@@ -20,7 +20,7 @@
 import genconfig, baseio
 from telemetry_templates import *
 
-class TelemetryMessage(baseio.CHeader, baseio.CCode, baseio.TagInheritance):
+class TelemetryMessage(baseio.CHeader, baseio.CCode, baseio.TagInheritance, baseio.OctaveCode):
     def __init__(self, hsh, parent):
         self.__dict__.update(hsh)
         self._inherit(parent)
@@ -61,7 +61,11 @@ void %(classname)s_%(varname)s_send(int counter); \n""" % self
             cf.write(lcm_telemetry_nop_template % self)
         self.to_c_no_h(filename, stub_f)
 
-
+    def to_telemetry_emlc(self):
+        filename = "octave/telemetry/%(classname)s_telemetry_%(type)s_%(varname)s" % self
+        def out_fcn(cf):
+            cf.write(emlc_telemetry_template % self)
+        self.to_octave_code(filename, out_fcn)
 
 class Telemetry(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.TagInheritance, baseio.Searchable):
     """This class represents a Telemetry class as taken from the XML
@@ -91,6 +95,7 @@ class Telemetry(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.TagInherita
     def codegen(self):
         self.to_telemetry_h()
         self.to_telemetry_c()
+        self.to_telemetry_emlc()
         self.telemetry_nops()
 
     def init_call(self):
@@ -186,6 +191,8 @@ class Telemetry(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.TagInherita
                                 lcm_run_prototype_template % self])
             cf.write(self.cpp_wrap(protos))
             cf.write(lcm_macros_template % self)
+
         self.to_h(self.classname + "_telemetry", telem_f)
 
-
+    def to_telemetry_emlc(self):
+        [m.to_telemetry_emlc() for m in self.messages]

@@ -177,7 +177,7 @@ class LCMStruct(baseio.TagInheritance, baseio.OctaveCode):
             cf.write(eml_lcm_send_dummy_template % self)
 
         def constructor_output_f(cf):
-            cf.write("function %(type)s = emlc_%(type)s() %%#eml\n\n" % self)
+            cf.write("function %(type)s = %(classname)s_%(type)s() %%#eml\n\n" % self)
             for m in self.members:
                 # primitives
                 if m['type'] in primitives_map.keys():
@@ -200,25 +200,25 @@ class LCMStruct(baseio.TagInheritance, baseio.OctaveCode):
             cf.write("\nend\n")
 
         def safecopy_output_f(cf):
-            cf.write('function %(type)s_out_ = safecopy_%(type)s(%(type)s_in_, n) %%#eml\n\n' % self)
+            cf.write('function %(type)s_out_ = %(classname)s_safecopy_%(type)s(%(type)s_in_, n) %%#eml\n\n' % self)
             cf.write('assert(isequal(size(%(type)s_in_), n));\n\n' % self)
-            cf.write('%(type)s_out_ = eml.nullcopy(repmat(emlc_%(type)s(), n))\n\n' % self)
+            cf.write('%(type)s_out_ = eml.nullcopy(repmat(emlc_%(type)s(), n));\n\n' % self)
             cf.write('for k=1:prod(n)\n')
             for m in self['members']:
                 if m['type'] in primitives_map.keys(): # primitive type
                     cf.write(("  "+self.type+"_out_(k).%(name)s = "+self.type+"_in_(k).%(name)s;\n") % m)
                 else: # non-primitive type
                     if m['has_key']('array'): # arrays
-                        cf.write(("  "+self.type+"_out_(k).%(name)s = safecopy_%(type)s("+self.type+"_in_.%(name)s, [%(array)s]));\n") % m)
+                        cf.write(("  "+self.type+"_out_(k).%(name)s = "+self.classname+"_safecopy_%(type)s("+self.type+"_in_.%(name)s, [%(array)s]));\n") % m)
                     else: # scalars
-                        cf.write(("  "+self.type+"_out_(k).%(name)s = safecopy_%(type)s("+self.type+"_in_.%(name)s, [1]));\n") % m)
+                        cf.write(("  "+self.type+"_out_(k).%(name)s = "+self.classname+"_safecopy_%(type)s("+self.type+"_in_.%(name)s, [1,1]);\n") % m)
 
             cf.write("end\n\nend\n")
 
-        self.to_octave_code('octave/lcm_send/eml_'+self['type'], lcm_send_output_f)
-        self.to_octave_code('octave/lcm_send_dummy/eml_'+self['type'], lcm_send_dummy_output_f)
-        self.to_octave_code('octave/constructors/eml_'+self['type'], constructor_output_f)
-        self.to_octave_code('octave/safecopy/safecopy_'+self['type'], safecopy_output_f)
+        self.to_octave_code('octave/lcm_send/'+self['classname']+'_lcm_send_'+self['type'], lcm_send_output_f)
+        self.to_octave_code('octave/lcm_send_dummy/'+self['classname']+'_lcm_send_'+self['type'], lcm_send_dummy_output_f)
+        self.to_octave_code('octave/constructors/'+self['classname']+'_'+self['type'], constructor_output_f)
+        self.to_octave_code('octave/safecopy/'+self['classname']+'_safecopy_'+self['type'], safecopy_output_f)
 
     def to_include(self):
         pass
@@ -301,7 +301,7 @@ class LCMEnum(baseio.TagInheritance, baseio.OctaveCode):
             cf.write("\nend\n")
 
         def safecopy_output_f(cf):
-            cf.write('function %(type)s_out_ = safecopy_%(type)s(%(type)s_in_, n) %%#eml\n\n' % self)
+            cf.write('function %(type)s_out_ = %(classname)s_safecopy_%(type)s(%(type)s_in_, n) %%#eml\n\n' % self)
             cf.write('assert(isequal([1,1], n));\n\n' % self)
             cf.write(('%(type)s_out_ = int32(0);\n\n') % self)
             cf.write('switch %(type)s_in_\n' % self)
@@ -312,10 +312,10 @@ class LCMEnum(baseio.TagInheritance, baseio.OctaveCode):
             cf.write('    error(\'lcm enum hack FAIL\');\n')
             cf.write("end\n\nend\n")
 
-        self.to_octave_code('octave/lcm_send/lcm_send_'+self['type'], lcm_send_output_f)
-        self.to_octave_code('octave/lcm_send_dummy/lcm_send_'+self['type'], lcm_send_dummy_output_f)
-        self.to_octave_code('octave/constructors/emlc_'+self['type'], constructor_output_f)
-        self.to_octave_code('octave/safecopy/safecopy_'+self['type'], safecopy_output_f)
+        self.to_octave_code('octave/lcm_send/'+self['classname']+'_lcm_send_'+self['type'], lcm_send_output_f)
+        self.to_octave_code('octave/lcm_send_dummy/'+self['classname']+'_lcm_send_'+self['type'], lcm_send_dummy_output_f)
+        self.to_octave_code('octave/constructors/'+self['classname']+'_'+self['type'], constructor_output_f)
+        self.to_octave_code('octave/safecopy/'+self['classname']+'_safecopy_'+self['type'], safecopy_output_f)
 
     def to_lcm(self):
         estr = "struct " + self.name + " {\n  int32_t val;\n}\n"
@@ -348,7 +348,9 @@ class StructClass(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.Searchabl
     def codegen(self):
         self.to_structs_h()
         self.to_structs_lcm()
-        [s.to_eml() for s in self.structs if s['classname']=='emlc']
+        if self.name == "emlc":
+            [s.to_eml() for s in self.structs]
+            self.to_emlc_macro_wrappers()
 
     def _filter_structs(self, structs):
         outstructs = []
@@ -367,6 +369,13 @@ class StructClass(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.Searchabl
         return "\n".join(["#include \"" + genconfig.lcm_folder + "/" 
                           + self.name + "_" + x.name + 
                           ".h\"\n" for x in self.structs])
+
+    def to_emlc_macro_wrappers(self):
+        def structs_f(cf):
+            cf.write('#include <emlc_telemetry.h>\n')
+            [cf.write("\n#define %(classname)s_lcm_send_%(type)s(msg) %(classname)s_lcm_send(msg, %(type)s)" % m) for m in self.structs]
+        self.to_h('octave/emlc_macro_wrappers/'+self.name+'_macro_wrappers', structs_f)
+
 
     def to_structs_h(self):
         def structs_f(cf):

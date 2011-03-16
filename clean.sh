@@ -11,6 +11,8 @@ rm -f octave/lcm_send/*.m &>/dev/null
 rm -f octave/lcm_send_dummy/*.m &>/dev/null
 rm -f octave/constructors/*.m &>/dev/null
 rm -f octave/safecopy/*.m &>/dev/null
+rm -f octave/telemetry/*.m &>/dev/null
+rm -f octave/emlc_macro_wrappers/*.h &>/dev/null
 rm -rf python/*
 rm -f telemetry/*.c telemetry/*.h &>/dev/null
 rm -f settings/*.c settings/*.h
