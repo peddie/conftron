@@ -59,6 +59,10 @@ lcm:
 	$(Q)lcm-gen -c $(LCM_TYPES) --c-cpath auto/ --c-hpath auto/
 	@echo ----- Generating LCM Python interface -----
 	$(Q)lcm-gen -p $(LCM_TYPES) --ppath python/
+	@echo ----- Generating LCM Java interface -----
+	$(Q)lcm-gen -j $(LCM_TYPES) --jmkdir --jpath java/
+	$(Q)javac -cp upstream/lcm-java/lcm.jar java/*/*.java
+	$(Q)sh ./build_java.sh
 
 gen: 
 	@echo

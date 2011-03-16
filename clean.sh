@@ -6,6 +6,7 @@ done
 
 rm -f classes.dat &>/dev/null
 rm -f auto/*.c auto/*.h &>/dev/null
+rm -rf java/* &>/dev/null
 rm -rf python/*
 rm -f telemetry/*.c telemetry/*.h &>/dev/null
 rm -f settings/*.c settings/*.h
