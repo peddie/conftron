@@ -133,7 +133,7 @@ class Configuration(baseio.Searchable):
             if structh.has_key(clname):
                 msgs = structh[clname].getchildren()
                 [msgs.insert(0, b) for b in basestructs]
-                csc = structs.CStructClass(clname, structh[clname], msgs)
+                csc = structs.StructClass(clname, structh[clname], msgs)
                 cscs = csc.structs
                 self.structs.append(csc)
             if seth.has_key(clname):

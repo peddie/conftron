@@ -327,7 +327,7 @@ class LCMEnum(baseio.TagInheritance, baseio.OctaveCode):
     def to_python(self):
         print "Compiling XML directly to python classes is not implemented. --MP"
 
-class CStructClass(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.Searchable):
+class StructClass(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.Searchable):
     def __init__(self, name, cl, structs):
         self.__dict__.update(cl.attrib)
         self.name = name
