@@ -4,6 +4,7 @@ auto/*.h
 *.pyc
 *.a
 *.so
+java/
 
 # lcm build
 upstream/examples/python/exlcm

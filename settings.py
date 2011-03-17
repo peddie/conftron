@@ -196,7 +196,13 @@ class Settings(baseio.CHeader,
         def settings_f(cf):
             cf.write("#include \"%(classname)s_types.h\"\n\n" % self)
             cf.write("#include \"%(classname)s_telemetry.h\"\n\n" % self)
+            cf.write("#ifdef __cplusplus\n")
+            cf.write("extern \"C\"{\n")
+            cf.write("#endif\n\n")
             self.settings_prototypes(cf)
+            cf.write("\n#ifdef __cplusplus\n")
+            cf.write("}\n")
+            cf.write("#endif\n")
             # Make initialization macro
             cf.write(lcm_settings_init_class_template % self)
             cf.write(lcm_check_call_template % self);

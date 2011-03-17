@@ -18,6 +18,7 @@
 ## 02110-1301, USA.
 
 import genconfig, baseio
+from eml_structs_templates import *
 
 lcm_primitives = ["double", "float", "int32_t", "int16_t", "int8_t"]
 
@@ -118,7 +119,7 @@ class StructField(baseio.TagInheritance):
                 return out
             return return_array
 
-class LCMStruct(baseio.TagInheritance, baseio.IncludePasting):
+class LCMStruct(baseio.TagInheritance, baseio.IncludePasting, baseio.OctaveCode):
     """This is the native format for structs we need to use.  You can
     convert to and from XML, C, LCM and Python."""
     def __init__(self, msg, parent):
@@ -179,6 +180,56 @@ class LCMStruct(baseio.TagInheritance, baseio.IncludePasting):
         outstr += "}\n"
         return outstr
 
+    def to_eml(self):
+        octave_primitives_map = {'double':'double', 'float':'double', 'int8_t':'int8', 'int16_t':'int16', 'int32_t':'int32'}
+ 
+        def lcm_send_output_f(cf):
+            cf.write(eml_lcm_send_template % self)
+
+        def lcm_send_dummy_output_f(cf):
+            cf.write(eml_lcm_send_dummy_template % self)
+
+        def constructor_output_f(cf):
+            cf.write(eml_constructor_template[0] % self)
+            for m in self.members:
+                ## THIS DOES NOT BELONG HERE:
+                ## give them all an octave-compatible array
+                ## i.e. scalar -> [1,1], vector -> [n,1], multidimensional array -> (no change)
+                if not m['has_key']('array'):
+                    m['octave_array']="1,1"
+                else:
+                    split_array = m['array'].split(",")
+                    if len(split_array) == 1:
+                        m['octave_array'] = split_array[0]+",1"
+                    else:
+                        m['octave_array'] = m['array']
+
+                ## loop though members and write their individual constructors
+                if m['type'] in octave_primitives_map.keys():
+                    # primitives
+                    m['octave_type'] = octave_primitives_map[m['type']]
+                    cf.write(self.type+"_out_.%(name)s = %(octave_type)s(zeros([%(octave_array)s]));\n" % m)
+                else:
+                    # not primitives
+                    cf.write(self.type+"_out_.%(name)s = repmat(emlc_%(type)s(), [%(octave_array)s]);\n" % m)
+
+            cf.write(eml_constructor_template[1] % self)
+
+            ## loop though and safely copy each member
+            for m in self['members']:
+                if m['type'] in octave_primitives_map.keys(): # primitive type
+                    cf.write(("    "+self.type+"_out_full_(k).%(name)s = "+self.type+"_in_(k).%(name)s;\n") % m)
+                else: # non-primitive type
+                    if m['has_key']('array'): # arrays
+                        cf.write(("    "+self.type+"_out_full_(k).%(name)s = "+self.classname+"_%(type)s("+self.type+"_in_(k).%(name)s, [%(array)s]));\n") % m)
+                    else: # scalars
+                        cf.write(("    "+self.type+"_out_full_(k).%(name)s = "+self.classname+"_%(type)s("+self.type+"_in_(k).%(name)s, [1,1]);\n") % m)
+            cf.write(eml_constructor_template[2] % self)
+
+        self.to_octave_code('octave/lcm_send/'+self['classname']+'_lcm_send_'+self['type'], lcm_send_output_f)
+        self.to_octave_code('octave/lcm_send_dummy/'+self['classname']+'_lcm_send_'+self['type'], lcm_send_dummy_output_f)
+        self.to_octave_code('octave/constructors/'+self['classname']+'_'+self['type'], constructor_output_f)
+
     def to_include(self):
         pass
         
@@ -188,7 +239,7 @@ class LCMStruct(baseio.TagInheritance, baseio.IncludePasting):
         the enums since LCM doesn't implement enum types."""
         print "Compiling XML directly to python classes is not implemented. --MP"
 
-class LCMEnum(baseio.TagInheritance):
+class LCMEnum(baseio.TagInheritance, baseio.OctaveCode):
     def __init__(self, enum, parent):
         self.__dict__.update(enum.attrib)
         self.fields = [f.strip() for f in self.fields.rsplit(',')]
@@ -244,6 +295,36 @@ class LCMEnum(baseio.TagInheritance):
         for f, n in defenum:
             estr += "#define " + f + " " + str(n) + "\n"
         return estr
+
+    def to_eml(self):
+        def lcm_send_output_f(cf):
+            cf.write(eml_lcm_send_template % self)
+
+        def lcm_send_dummy_output_f(cf):
+            cf.write(eml_lcm_send_dummy_template % self)
+
+        def enum_encoder_output_f(cf):
+            cf.write(eml_enum_encoder_template_0 % self)
+            for v,k in self['get_indices_with_fields']().iteritems():
+                cf.write('    case \''+k+'\'\n')
+                cf.write(('        int32_out = int32('+str(v)+');\n') % self)
+            cf.write(eml_enum_encoder_template_1 % self)
+
+        def enum_decoder_output_f(cf):
+            cf.write(eml_enum_decoder_template_0 % self)
+            for v,k in self['get_indices_with_fields']().iteritems():
+                cf.write('    case int32('+str(v)+')\n')
+                cf.write(('        string_out = \''+k+'\';\n') % self)
+            cf.write(eml_enum_decoder_template_1 % self)
+
+        def constructor_output_f(cf):
+            cf.write(eml_enum_constructor_template % self)
+
+        self.to_octave_code('octave/lcm_send/'+self['classname']+'_lcm_send_'+self['type'], lcm_send_output_f)
+        self.to_octave_code('octave/lcm_send_dummy/'+self['classname']+'_lcm_send_'+self['type'], lcm_send_dummy_output_f)
+        self.to_octave_code('octave/constructors/'+self['classname']+'_'+self['type'], constructor_output_f)
+        self.to_octave_code('octave/enum_encoders/encode_%(classname)s_%(type)s' % self, enum_encoder_output_f)
+        self.to_octave_code('octave/enum_decoders/decode_%(classname)s_%(type)s' % self, enum_decoder_output_f)
 
     def to_lcm(self):
         estr = "struct " + self.name + " {\n  int32_t val;\n}\n"
@@ -302,6 +383,9 @@ class CStructClass(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.Searchab
     def codegen(self):
         self.to_structs_h()
         self.to_structs_lcm()
+        if self.name == "emlc":
+            [s.to_eml() for s in self.structs]
+            self.to_emlc_macro_wrappers()
 
     def _filter_structs(self, structs):
         die = 0
@@ -323,6 +407,13 @@ class CStructClass(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.Searchab
         return "\n".join(["#include \"" + genconfig.lcm_folder + "/" 
                           + self.name + "_" + x.name + 
                           ".h\"\n" for x in self.structs])
+
+    def to_emlc_macro_wrappers(self):
+        def structs_f(cf):
+            cf.write('#include <emlc_telemetry.h>\n')
+            [cf.write("\n#define %(classname)s_lcm_send_%(type)s(msg) %(classname)s_lcm_send(msg, %(type)s)" % m) for m in self.structs]
+        self.to_h('octave/emlc_macro_wrappers/'+self.name+'_macro_wrappers', structs_f)
+
 
     def to_structs_h(self):
         def structs_f(cf):

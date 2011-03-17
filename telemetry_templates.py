@@ -185,3 +185,22 @@ parameter `%(tag)s' for message `%(varname)s'.  Make sure you provide
 this parameter in the telemetry configuration file, or I won't know
 when to send your messages.
 """
+
+emlc_telemetry_template ="""\
+function %(classname)s_telemetry_%(type)s_%(name)s(%(name)s_) %%#eml
+
+persistent counter;
+
+if isempty(counter)
+  counter = 1;
+end
+
+counter = counter - 1;
+
+if counter <= 0
+  counter = %(simrate)s;
+  %(classname)s_lcm_send_%(type)s(%(name)s_);
+end
+
+end
+"""
