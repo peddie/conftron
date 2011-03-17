@@ -103,10 +103,7 @@ class Telemetry(baseio.CHeader,
                 except AttributeError:
                     # Nope.
                     self.__dict__[k] = other.__dict__[k]
-        print "Merged telemetry classes:"
-        print [m.name for m in self.messages], "+", [m.name for m in other.messages]
         self.messages.extend(other.messages)
-        print "=", [m.name for m in self.messages]
         return self
 
     def search(self, searchname):
