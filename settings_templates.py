@@ -111,17 +111,6 @@ lcm_settings_field_template_mm = """
   }
 """
 
-lcm_settings_field_template_absbound = """
-  if (new_data == NULL) {
-    %(varname)s.%(name)s = %(default)s;
-  } else {
-    if (fabs(new_data->%(name)s) > %(absmax)s)
-      %(varname)s.%(name)s = copysign(%(absmax)s, new_data->%(name)s);
-    else
-      %(varname)s.%(name)s = new_data->%(name)s;
-  }
-"""
-
 lcm_send_settings_template = """
 void
 %(classname)s_%(varname)s_set(%(classname)s_%(type)s *new_data)
@@ -151,8 +140,8 @@ Make sure you've specified either a `max' and `min' value or an
 """ 
 
 parse_settings_noval = """
-Error: Settings generation couldn't derive a(n) `%(sp)s' value 
-for field `%(f)s' in section `%(s)s'.  
+Error: Settings generation couldn't derive a(n) `%(tag)s' value for
+field `%(name)s' in section `%(parentname)s'.
 
 You must specify this value either for the entire section or for each
 field within the section.  (If both are specified, the value inside

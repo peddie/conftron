@@ -21,99 +21,48 @@ import genconfig, baseio
 from settings_templates import *
 
 class LCMSettingField(baseio.TagInheritance):
+    required_tags = ['default', 'step', 'min', 'max']
     def __init__(self, hsh, parent):
         self.__dict__.update(hsh)
         self._inherit(parent)
+        if self.has_key('absmax'):
+            self.min = -float(self.absmax)
+            self.max = float(self.absmax)
         self.parent = parent
+        self.parentname = parent.name
+        self._musthave(parent, parse_settings_noval)
         self.classname = parent.classname
         parent.die += self._filter()
 
     def field_setting(self):
-        if self.has_key('absmax'):
-            return lcm_settings_field_template_absbound % self
-        else:
-            return lcm_settings_field_template_mm % self
+        return lcm_settings_field_template_mm % self
 
     def _filter(self):
         die = 0
-        notfound = self._fill_in_field_keys_from_parent()
-        for nf in notfound:
-            print parse_settings_noval % {"sp":nf, "f":self['name'], "s":self.parent['name']}
-            die += 1 
-        die += self._are_settings_bounded()
         die += self._are_defaults_sane()
         return die
 
-    def _fill_in_field_keys_from_parent(self):
-        ## Try to get attributes for setting from the section if
-        ## they're not in the field.
-        notfound = []
-        for sp in (['step', 'default']):
-            if (self.has_key(sp)):
-                pass
-            elif (not self.has_key(sp)) and (self.parent.has_key(sp)):
-                self[sp] = self.parent[sp]
-            else:
-                notfound.append(sp)
-        return notfound
-
-    def _are_settings_bounded(self):
-        ## Make sure we don't have any unbounded settings values.
-        ## That's Dangerous!
-        die = 0
-        if (((not self.has_key('min')) 
-            or (not self.has_key('max')))
-            and (not self.has_key('absmax'))):
-            if self.parent.has_key('min') and self.parent.has_key('max'):
-                self['min'] = self.parent['min']
-                self['max'] = self.parent['max']
-            elif self.parent.has_key('absmax'):
-                self['absmax'] = self.parent['absmax']
-            else:
-                print parse_settings_nobounds % {"f":self['name'], "s":self.parent['name']}
-                die += 1
-        return die
-        
     def _are_defaults_sane(self):
         ## Default values outside the range given by the bounds
         ## don't make sense either.
         die = 0
-        if self.has_key('min'):
-            if (float(self['min']) > float(self['default'])
-                or float(self['max']) < float(self['default'])):
-                print parse_settings_badval % {"sp":'default', 
-                                               "f":self['name'], 
-                                               "s":self.parent['name'], 
-                                               "max":self['max'], 
-                                               "min":self['min'], 
-                                               "val":self['default']} 
-                die += 1
-            if float(self['step']) > (float(self['max']) - float(self['min'])):
-                print parse_settings_badval % {"sp":'default', 
-                                               "f":self['name'], 
-                                               "s":self.parent['name'], 
-                                               "max":self['max'], 
-                                               "min":self['min'], 
-                                               "val":self['step']} 
-                die += 1
-        elif self.has_key('absmax'):
-            if (-float(self['absmax']) > float(self['default'])
-                or float(self['absmax']) < float(self['default'])):
-                print parse_settings_badval % {"sp":'step', 
-                                               "f":self['name'], 
-                                               "s":self.parent['name'], 
-                                               "max":self['absmax'], 
-                                               "min":"-"+self['absmax'], 
-                                               "val":self['default']} 
-                die += 1
-            if float(self['step']) > (float(self['absmax'])*2):
-                print parse_settings_badval % {"sp":'step', 
-                                               "f":self['name'], 
-                                               "s":self.parent['name'], 
-                                               "max":self['absmax'], 
-                                               "min":"-"+self['absmax'], 
-                                               "val":self['step']} 
-                die += 1
+        if (float(self['min']) > float(self['default'])
+            or float(self['max']) < float(self['default'])):
+            print parse_settings_badval % {"sp":'default', 
+                                           "f":self['name'], 
+                                           "s":self.parent['name'], 
+                                           "max":self['max'], 
+                                           "min":self['min'], 
+                                           "val":self['default']} 
+            die += 1
+        if float(self['step']) > (float(self['max']) - float(self['min'])):
+            print parse_settings_badval % {"sp":'default', 
+                                           "f":self['name'], 
+                                           "s":self.parent['name'], 
+                                           "max":self['max'], 
+                                           "min":self['min'], 
+                                           "val":self['step']} 
+            die += 1
         return die
 
 class LCMSetting(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.TagInheritance, baseio.IncludePasting):

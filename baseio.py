@@ -152,7 +152,7 @@ class TagInheritance(ImADictionary):
 
     def _inherit(self, parent):
         for tag, value in parent.__dict__.iteritems():
-            if not tag in self.reserved:
+            if not tag in self.__dict__ and not tag in self.reserved:
                 if not self.has_key(tag):
                     self[tag] = value
 
