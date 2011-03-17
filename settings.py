@@ -116,15 +116,20 @@ class LCMSettingField(baseio.TagInheritance):
                 die += 1
         return die
 
-class LCMSetting(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.TagInheritance):
+class LCMSetting(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.TagInheritance, baseio.IncludePasting):
     def __init__(self, s, parent):
         self.__dict__.update(s.attrib)
         self.classname = parent.name
         self._inherit(parent)
         self.lcm_folder = genconfig.lcm_folder
         self.die = 0
-        self.fields = [LCMSettingField(dict(f.attrib, **{'varname':self.varname}), self) for f in s.getchildren()]
+        self.make_fields(s.getchildren())
         self.field_settings = "\n".join([f.field_setting() for f in self.fields])
+
+    def make_fields(self, fields):
+        flattened = self.insert_includes(fields, ['member'])
+        self.check_includes(flattened, ['member'])
+        self.fields = [LCMSettingField(dict(f.attrib, **{'varname':self.varname}), self) for f in flattened]
 
     def to_settings_file(self):
         basename = "%(classname)s_%(type)s_%(varname)s" % self
@@ -151,9 +156,16 @@ class LCMSetting(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.TagInherit
     def to_settings_prototype(self, cf):
         cf.write(lcm_settings_prototype % self)
 
-class Settings(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.TagInheritance, baseio.Searchable):
-    def __init__(self, name, children, class_structs):
+class Settings(baseio.CHeader, 
+               baseio.LCMFile, 
+               baseio.CCode, 
+               baseio.TagInheritance, 
+               baseio.Searchable,
+               baseio.IncludePasting):
+    def __init__(self, name, children, class_structs, path, filename):
         self.name = name
+        self.path = path
+        self.file = filename
         self.classname = name
         self.settings = self._filter_settings(children)
         self.class_struct_includes = self._class_struct_includes(class_structs)
@@ -175,7 +187,9 @@ class Settings(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.TagInheritan
 
     def _filter_settings(self, structs):
         die = 0
-        outstructs = [LCMSetting(s, self) for s in structs]
+        flattened = self.insert_includes(structs, ['struct'])
+        self.check_includes(flattened, ['struct'])
+        outstructs = [LCMSetting(s, self) for s in flattened]
         die = sum([s.die for s in outstructs])
         if die:
             print "Lots of settings errors detected; cannot continue code generation."

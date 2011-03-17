@@ -17,7 +17,9 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 ## 02110-1301, USA.
 
-import genconfig
+import genconfig, sys, collections
+from xml.etree import ElementTree as ET
+import xml.parsers.expat as expat
 
 h_file_head = """
 /* This file is part of conftron.  
@@ -49,10 +51,16 @@ h_file_head = """
 
 parse_type_error = """
 Warning: XML parser encountered an object of type `%(msg_tag)s' 
-in file `%(filename)s.xml.'  Either the XML is broken 
+in file `%(filename)s.'  Either the XML is broken 
 (check for typos?) or support for this type is not yet implemented.
 """
 
+include_type_error = """
+Warning!  Use of <include .../> directive in XML config file may have
+resulted in an inconsistent configuration (in object %(repr)s
+`%(name)s').  This object expected subelements of type `%(ok)s', but
+after parsing XML, it ended up with a subelement of type `%(bad)s'.  
+"""
 ## Utility parent classes that let you write properly formed C, Octave
 ## and LCM files.
 class CHeader():
@@ -176,3 +184,50 @@ class Searchable():
             return dictionary[searchname]
         else:
             return (v for k,v in dictionary.iteritems() if v.search(searchname)).next()
+
+class IncludePasting():
+    def __init__(self):
+        pass
+
+    def flatten_list(self, x):
+        result = []
+        for el in x:
+            if isinstance(el, collections.Iterable) and not isinstance(el, basestring):
+                result.extend(self.flatten_list(el))
+            else:
+                result.append(el)
+        return result
+
+    def include(self, child, ok):
+        if child.tag == 'include':
+            try:
+                includename = self.path + child.attrib['href']
+                return ET.ElementTree().parse(includename).getchildren()
+            except IOError as e:
+                print "Couldn't open included XML file `" + includename +"':", e
+                self.die = True
+            except expat.ExpatError as e:
+                print "Error parsing included XML file `" + includename +"':", e
+                self.die = True
+        elif not child.tag in ok:
+            print parse_type_error % {'msg_tag':child.tag, 'filename':self.file}
+        else:
+            return child
+
+    def insert_includes(self, children, ok):        
+        self.die=False
+        out = [self.include(c, ok) for c in children]
+        if self.die:
+            print "XML parsing encountered one or more fatal errors; exiting."
+            sys.exit(1)
+        return self.flatten_list(out)
+            
+    def check_includes(self, children, ok):
+        fail = False
+        for c in children:
+            if not c.tag in ok:
+                print include_type_error % {'repr':repr(self), 'name':self.name, 'ok':ok, 'bad':c.tag}
+                fail = True
+        if fail: 
+            print
+            print "I will try to continue, but if you experience problems, check your use of XML <include>s."

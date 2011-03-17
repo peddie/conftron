@@ -63,14 +63,20 @@ void %(classname)s_%(varname)s_send(int counter); \n""" % self
 
 
 
-class Telemetry(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.TagInheritance, baseio.Searchable):
+class Telemetry(baseio.CHeader,
+                baseio.LCMFile,
+                baseio.CCode,
+                baseio.TagInheritance,
+                baseio.Searchable,
+                baseio.IncludePasting):
     """This class represents a Telemetry class as taken from the XML
     config."""
-    def __init__(self, classname, tel, ratedict, class_structs):
+    def __init__(self, classname, tel, class_structs, path, myfile):
         self.classname = classname
-        self.__dict__.update(ratedict)
+        self.path = path
+        self.file = myfile
         self.__dict__.update(tel.attrib)
-        self.messages = self._filter_messages(tel.getchildren())
+        self._filter_messages(tel.getchildren())
         self.sim_flag = genconfig.sim_flag
         self.timestep = genconfig.timestep
         self.send_all = "\n".join(["  " + m.classname + "_" + m.varname + "_send(counter);" for m in self.messages])
@@ -99,24 +105,10 @@ class Telemetry(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.TagInherita
     def run_call(self):
         return lcm_run_call_template % self + "\n"
 
-    def _inherit(self, child):
-        for tag, value in self.__dict__.iteritems():
-            if not tag in ['name', 'varname', 'type']:
-                if not child.has_key(tag):
-                    child[tag] = value
-
     def _filter_messages(self, msgs):
-        outstructs = []
-        for msg in msgs:
-            if msg.tag == 'message':
-                if not msg.attrib.has_key('flight'):
-                    msg.attrib['flight'] = self.flightrate
-                if not msg.attrib.has_key('sim'):
-                    msg.attrib['sim'] = self.simrate
-                outstructs.append(TelemetryMessage(dict(msg.attrib, **{'varname':msg.attrib['name']}), self))
-            else:
-                print baseio.parse_type_error % {"msg_tag":msg.tag, "filename":"telemetry"}
-        return outstructs
+        flattened = self.insert_includes(msgs, ['message'])
+        self.check_includes(flattened, ['message'])
+        self.messages = [TelemetryMessage(dict(msg.attrib, **{'varname':msg.attrib['name']}), self) for msg in flattened]
 
     def _class_struct_pointers(self, structs):
         out = []
