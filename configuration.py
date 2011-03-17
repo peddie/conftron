@@ -141,7 +141,11 @@ class Configuration(baseio.Searchable):
                 for cl in structh[clname]:
                     msgs = cl.getchildren()
                     [msgs.insert(0, b) for b in basestructs]
-                    loc.append(structs.CStructClass(clname, cl, msgs))
+                    loc.append(structs.CStructClass(clname, 
+                                                    cl, 
+                                                    msgs, 
+                                                    genconfig.config_folder, 
+                                                    self.typesfile))
                 ## Uy veigh.  
                 ready = reduce(lambda x, y: x.merge(y), loc)
                 self.structs.append(ready)

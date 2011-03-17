@@ -118,13 +118,14 @@ class StructField(baseio.TagInheritance):
                 return out
             return return_array
 
-class LCMStruct(baseio.TagInheritance):
+class LCMStruct(baseio.TagInheritance, baseio.IncludePasting):
     """This is the native format for structs we need to use.  You can
     convert to and from XML, C, LCM and Python."""
     def __init__(self, msg, parent):
         self.__dict__.update(msg.attrib)
         self._inherit(parent)
-        self.members = [StructField(dict(m.attrib, **{'cl':self.cl}), self) for m in msg.getchildren()]
+        self.parent = parent
+        self._filter_fields(msg.getchildren())
         self.classname = parent.name
         self.type = self.name
         self.lcm_folder = genconfig.lcm_folder
@@ -136,6 +137,18 @@ class LCMStruct(baseio.TagInheritance):
             [fields.extend(mc(getattr(msg, m.name))) for m, mc in member_callbacks]
             return fields
         return return_data
+
+    def _filter_fields(self, fields):
+        die = 0
+        outstructs = []
+        flattened = self.insert_includes(fields, ['field', 'member'])
+        self.check_includes(flattened, ['field', 'member'])
+        outstructs = [StructField(dict(f.attrib, **{'cl':self.parent}), self) for f in flattened]
+        die = sum([s.die for s in outstructs])
+        if die:
+            print "Lots of types errors detected in struct `%(name)s'; cannot continue code generation." % self
+            sys.exit(1)
+        self.members = outstructs
 
     def to_c(self):
         """This emits additional C code (struct definitions) for all
@@ -242,11 +255,13 @@ class LCMEnum(baseio.TagInheritance):
     def to_python(self):
         print "Compiling XML directly to python classes is not implemented. --MP"
 
-class CStructClass(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.Searchable):
-    def __init__(self, name, cl, structs):
+class CStructClass(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.Searchable, baseio.IncludePasting):
+    def __init__(self, name, cl, structs, path, filename):
         self.__dict__.update(cl.attrib)
         self.name = name
-        self.structs = self._filter_structs(structs)
+        self.path = path
+        self.file = filename
+        self._filter_structs(structs)
 
     def merge(self, other):
         ## The merge operation breaks a few things to do with internal
@@ -289,17 +304,20 @@ class CStructClass(baseio.CHeader, baseio.LCMFile, baseio.CCode, baseio.Searchab
         self.to_structs_lcm()
 
     def _filter_structs(self, structs):
+        die = 0
         outstructs = []
-        for struct in structs:
-            if struct.tag == 'message' or struct.tag == 'struct':
-                struct.attrib['cl'] = self
-                outstructs.append(LCMStruct(struct, self))
-            elif struct.tag == 'enum':
-                struct.attrib['cl'] = self
-                outstructs.append(LCMEnum(struct, self))
+        flattened = self.insert_includes(structs, ['struct', 'message', 'enum'])
+        self.check_includes(flattened, ['struct', 'message', 'enum'])
+        for s in flattened:
+            if s.tag == 'enum':
+                outstructs.append(LCMEnum(s, self))
             else:
-                print baseio.parse_type_error % {"msg_tag":struct.tag, "filename":"types"}
-        return outstructs
+                outstructs.append(LCMStruct(s, self))
+        die = sum([s.die for s in outstructs])
+        if die:
+            print "Lots of types errors detected; cannot continue code generation."     
+            sys.exit(1)
+        self.structs = outstructs
 
     def include_headers(self):
         return "\n".join(["#include \"" + genconfig.lcm_folder + "/" 
