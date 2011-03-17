@@ -10,7 +10,6 @@ rm -rf java/* &>/dev/null
 rm -f octave/lcm_send/*.m &>/dev/null
 rm -f octave/lcm_send_dummy/*.m &>/dev/null
 rm -f octave/constructors/*.m &>/dev/null
-rm -f octave/safecopy/*.m &>/dev/null
 rm -f octave/telemetry/*.m &>/dev/null
 rm -f octave/emlc_macro_wrappers/*.h &>/dev/null
 rm -f octave/enum_decoders/*.h &>/dev/null
