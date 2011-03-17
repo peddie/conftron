@@ -169,13 +169,25 @@ class Settings(baseio.CHeader,
         self.classname = name
         self.settings = self._filter_settings(children)
         self.class_struct_includes = self._class_struct_includes(class_structs)
-        self.init_calls = "\n".join([lcm_settings_init_call_template % s for s in self.settings])
-        self.null_calls = "\n".join([lcm_settings_init_null_template % s for s in self.settings])
+
+    def merge(self, other):
+        for k, v in other.__dict__.iteritems():
+            if not k in genconfig.reserved_tag_names:
+                try:
+                    # Is it a method?
+                    getattr(getattr(self, k), "__call__")
+                except AttributeError:
+                    # Nope.
+                    self.__dict__[k] = other.__dict__[k]
+        self.settings.extend(other.settings)
+        return self
 
     def search(self, searchname):
         return self._search(self.settings, searchname)
 
     def codegen(self):
+        self.init_calls = "\n".join([lcm_settings_init_call_template % s for s in self.settings])
+        self.null_calls = "\n".join([lcm_settings_init_null_template % s for s in self.settings])
         self.to_settings_h()
         self.settings_nops()
 

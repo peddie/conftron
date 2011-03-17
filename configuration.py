@@ -105,41 +105,61 @@ class Configuration(baseio.Searchable):
                                    genconfig.config_folder,
                                    self.telemetryfile)
 
-    def parse_types(self):
-        ## Walk through the types, telemetry and settings definitions and
-        ## create tuples of those that line up
-        basestructs = []
-        structh = {}
-        telemh = {}
-        seth = {}
-        for cl in ET.ElementTree().parse(genconfig.config_folder + self.typesfile).getchildren():
+    def add_to_class_hash(self, hsh, cl):
+        if hsh.has_key(cl.attrib['name']):
+            hsh[cl.attrib['name']].append(cl)
+        else:
+            hsh[cl.attrib['name']] = [cl]
+        return hsh
+
+    def parse_classes(self, structs, structh, base, baseok):
+        for cl in structs:
             if cl.tag == 'class':
-                structh[cl.attrib['name']] = cl
-            elif cl.tag in ['struct', 'enum', 'message']:
+                self.add_to_class_hash(structh, cl)
+            elif cl.tag in baseok:
                 cl.attrib['__base__'] = True
-                basestructs.append(cl)
-        for cl in ET.ElementTree().parse(genconfig.config_folder + self.telemetryfile).getchildren():
-            telemh[cl.attrib['name']] = cl
-        for cl in ET.ElementTree().parse(genconfig.config_folder + self.settingsfile).getchildren():
-            seth[cl.attrib['name']] = cl
+                base.append(cl)
+            elif cl.tag == 'include':
+                (structh, base) = self.parse_classes(ET.ElementTree().parse(genconfig.config_folder + cl.attrib['href']).getchildren(), structh, base, baseok)
+        return (structh, base)
+
+    def parse_types(self):
+        ## Walk through the types, telemetry and settings definitions (allow arbitrary include depth)
+        (structh, basestructs) = self.parse_classes(ET.ElementTree().parse(genconfig.config_folder + self.typesfile).getchildren(), 
+                                     {}, [], ['struct', 'enum', 'message'])
         basestructs.reverse()
+        (telemh, basetelem) = self.parse_classes(ET.ElementTree().parse(genconfig.config_folder + self.telemetryfile).getchildren(),
+                                                 {}, [], [])
+        (seth, baseset) = self.parse_classes(ET.ElementTree().parse(genconfig.config_folder + self.settingsfile).getchildren(),
+                                             {}, [], [])
 
         self.classnames = set(structh.keys() + telemh.keys() + seth.keys())
         for clname in self.classnames:
             cscs = None
-            csc = None
-            tt = None
-            ss = None
             if structh.has_key(clname):
-                msgs = structh[clname].getchildren()
-                [msgs.insert(0, b) for b in basestructs]
-                csc = structs.CStructClass(clname, structh[clname], msgs)
-                cscs = csc.structs
-                self.structs.append(csc)
+                loc = []
+                for cl in structh[clname]:
+                    msgs = cl.getchildren()
+                    [msgs.insert(0, b) for b in basestructs]
+                    loc.append(structs.CStructClass(clname, cl, msgs))
+                ## Uy veigh.  
+                ready = reduce(lambda x, y: x.merge(y), loc)
+                self.structs.append(ready)
+                cscs = ready.structs
             if seth.has_key(clname):
-                self.settings.append(settings.Settings(clname, seth[clname].getchildren(), cscs))
+                loc = []
+                for cl in seth[clname]:
+                    loc.append(settings.Settings(clname, 
+                                                 cl.getchildren(), 
+                                                 cscs, 
+                                                 genconfig.config_folder, 
+                                                 self.settingsfile))
+                self.settings.append(reduce(lambda x, y: x.merge(y), loc))
                 del seth[clname]
             if telemh.has_key(clname):
-                self.telemetry.append(self._create_telemetry_class(clname, telemh[clname], cscs))
+                loc = []
+                for cl in telemh[clname]:
+                    loc.append(self._create_telemetry_class(clname, cl, cscs))
+                self.telemetry.append(reduce(lambda x, y: x.merge(y), loc))
                 del telemh[clname]
 

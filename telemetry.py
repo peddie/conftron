@@ -79,9 +79,35 @@ class Telemetry(baseio.CHeader,
         self._filter_messages(tel.getchildren())
         self.sim_flag = genconfig.sim_flag
         self.timestep = genconfig.timestep
-        self.send_all = "\n".join(["  " + m.classname + "_" + m.varname + "_send(counter);" for m in self.messages])
         self.class_struct_pointers = self._class_struct_pointers(class_structs)
         self.class_struct_includes = self._class_struct_includes(class_structs)
+
+    def merge(self, other):
+        ## The merge operation breaks a few things to do with internal
+        ## consistency.  Basically, when we update the internal
+        ## dictionary from the `other' instance, our local tags can be
+        ## overwritten.  There's no good way around this within the
+        ## current object hierarchy.  However, since the merge
+        ## operation is not part of __init__(), the correct tags are
+        ## propagated to the children of each instance _before_ they
+        ## merge.  Basically, when you use the Configuration API,
+        ## search for the properties of the actual object you want to
+        ## deal with, and don't assume its parents will tell you what
+        ## you want to know about it.
+
+        for k, v in other.__dict__.iteritems():
+            if not k in genconfig.reserved_tag_names:
+                try:
+                    # Is it a method?
+                    getattr(getattr(self, k), "__call__")
+                except AttributeError:
+                    # Nope.
+                    self.__dict__[k] = other.__dict__[k]
+        print "Merged telemetry classes:"
+        print [m.name for m in self.messages], "+", [m.name for m in other.messages]
+        self.messages.extend(other.messages)
+        print "=", [m.name for m in self.messages]
+        return self
 
     def search(self, searchname):
         return self._search(self.messages, searchname)
@@ -95,6 +121,7 @@ class Telemetry(baseio.CHeader,
             return ff.channel
 
     def codegen(self):
+        self.send_all = "\n".join(["  " + m.classname + "_" + m.varname + "_send(counter);" for m in self.messages])
         self.to_telemetry_h()
         self.to_telemetry_c()
         self.telemetry_nops()
