@@ -101,9 +101,9 @@ class Configuration(baseio.Searchable):
     def _create_telemetry_class(self, clname, tel, msgs):
         return telemetry.Telemetry(clname, 
                                    tel,
-                                   {'simrate':tel.attrib['sim'], 
-                                    'flightrate':tel.attrib['flight']}, 
-                                   msgs)
+                                   msgs,
+                                   genconfig.config_folder,
+                                   self.telemetryfile)
 
     def parse_types(self):
         ## Walk through the types, telemetry and settings definitions and

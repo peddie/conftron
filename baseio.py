@@ -156,6 +156,13 @@ class TagInheritance(ImADictionary):
                 if not self.has_key(tag):
                     self[tag] = value
 
+    def _musthave(self, parent, errmsg):
+        for tag in self.required_tags:
+            if not self.has_key(tag):
+                if not parent.has_key(tag):
+                    print errmsg % dict(self, **{'tag':tag})
+                self[tag] = parent[tag]
+
 class Searchable():
     def __init__(self):
         pass

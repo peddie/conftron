@@ -21,11 +21,11 @@ import genconfig, baseio
 from telemetry_templates import *
 
 class TelemetryMessage(baseio.CHeader, baseio.CCode, baseio.TagInheritance):
+    required_tags = ['flightrate', 'simrate']
     def __init__(self, hsh, parent):
         self.__dict__.update(hsh)
         self._inherit(parent)
-        self.simrate = self.sim
-        self.flightrate = self.flight
+        self._musthave(parent, telemetry_rates_error)
         self.sim_flag = genconfig.sim_flag
         self.timestep = genconfig.timestep
         self.lcm_folder = genconfig.lcm_folder

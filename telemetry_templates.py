@@ -179,3 +179,9 @@ lcm_macros_template = """
 
 """
 
+telemetry_rates_error = """
+Error: Couldn't derive a value for the required parameter `%(tag)s'
+for message `%(varname)s'.  Make sure you provide this parameter in
+the telemetry configuration file, or I won't know when to send your
+messages.
+"""
