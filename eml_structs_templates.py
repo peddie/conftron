@@ -17,45 +17,80 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 ## 02110-1301, USA.
 
+
+############  LCM  ###############
 eml_lcm_send_template = """\
-function %(classname)s_lcm_send_%(type)s( %(type)s_in ) %%#eml
+function %(classname)s_lcm_send_%(type)s( %(type)s_in_ ) %%#eml
 
-%(type)s_ = %(classname)s_safecopy_%(type)s( %(type)s_in, [1,1] );
+%(type)s_ = %(classname)s_%(type)s( %(type)s_in_, [1,1] );
 
-eml.ceval('emlc_lcm_send_%(type)s', eml.rref(%(type)s_in));
+eml.ceval('emlc_lcm_send_%(type)s', eml.rref(%(type)s_));
 
 end
 """
 
 eml_lcm_send_dummy_template = """\
-function %(classname)s_lcm_send_%(type)s( %(type)s_in ) %%#eml
+function %(classname)s_lcm_send_%(type)s( %(type)s_in_ ) %%#eml
 
 %% dummy file to keep simulink from choking
 
 end
 """
 
-eml_enum_safecopy_template = """\
-function %(type)s_out_ = %(classname)s_safecopy_%(type)s(%(type)s_in_, n) %%#eml
+#############  STRUCTS  #################
+eml_constructor_template = ["""\
+function %(type)s_out_ = %(classname)s_%(type)s(%(type)s_in_, n) %%#eml
 
-assert(isequal([1,1], n));
-
-%(type)s_out_ = %(classname)s_%(type)s_decoder(%(type)s_in_);
-
-end\
+%% constructor:
+""",
 """
+if nargin == 0
+    return;
+end
 
-eml_enum_constructor_template = """\
-function int32_out = %(classname)s_%(type)s(string_in) %%#eml
+%% safecopy:
+if nargin == 1
+    n = [1,1];
+end
 
-val_out = int32(0);
+assert(isequal(size(%(type)s_in_), n));
 
-if nargin ~= 0
-  val_out = encode_%(classname)s_%(type)s(string_in);
+%(type)s_out_full_ = repmat( %(type)s_out_, n );
+
+for k=1:prod(n)
+""",
+"""\
 end
 
 end\
+"""]
+
+
+#################  ENUMS  ####################
+eml_enum_constructor_template = """\
+function val_out = %(classname)s_%(type)s(val_in, n) %%#eml
+
+if nargin == 0
+    val_out = int32(0);
+    return;
+end
+
+%% arrays of enums not yet supported
+if nargin == 2
+    assert(n == [1,1]);
+end
+
+if ischar(val_in)
+    val_out = encode_%(classname)s_%(type)s(val_in);
+else
+    assert(isinteger(val_in));
+    assert(isscalar(val_in));
+    val_out = int32(val_in);
+end
+
+end
 """
+
 
 eml_enum_encoder_template_0 = """\
 function int32_out = encode_%(classname)s_%(type)s(string_in); %%#eml
@@ -77,9 +112,9 @@ end\
 eml_enum_decoder_template_0 = """\
 function string_out = decode_%(classname)s_%(type)s(int_in); %%#eml
 
-assert(isa(int_in, 'integer'));
+assert(isnumeric(int_in));
 
-switch int_in
+switch int32(int_in)
 """
 
 eml_enum_decoder_template_1 = """\

@@ -168,7 +168,7 @@ class LCMStruct(baseio.TagInheritance, baseio.OctaveCode):
         return outstr
 
     def to_eml(self):
-        primitives_map = {'double':'double', 'float':'double', 'int8_t':'int8', 'int16_t':'int16', 'int32_t':'int32'}
+        octave_primitives_map = {'double':'double', 'float':'double', 'int8_t':'int8', 'int16_t':'int16', 'int32_t':'int32'}
  
         def lcm_send_output_f(cf):
             cf.write(eml_lcm_send_template % self)
@@ -177,48 +177,45 @@ class LCMStruct(baseio.TagInheritance, baseio.OctaveCode):
             cf.write(eml_lcm_send_dummy_template % self)
 
         def constructor_output_f(cf):
-            cf.write("function %(type)s = %(classname)s_%(type)s() %%#eml\n\n" % self)
+            cf.write(eml_constructor_template[0] % self)
             for m in self.members:
-                # primitives
-                if m['type'] in primitives_map.keys():
-                    m['matlab_type'] = primitives_map[m['type']]
-                    if m['has_key']('array'): # arrays
-                        if len(m['array']) == 1:
-                            cf.write(self.type+".%(name)s = %(matlab_type)s(zeros([%(array)s,1]));\n" % m)
-                        else:
-                            cf.write(self.type+".%(name)s = %(matlab_type)s(zeros([%(array)s]));\n" % m)
-                    else: # scalars
-                        cf.write(self.type+".%(name)s = %(matlab_type)s(0);\n" % m)
-                else: # not primitive
-                    if m['has_key']('array'): # arrays
-                        if len(m['array']) > 1:
-                            cf.write(self.type+".%(name)s = repmat(emlc_%(type)s(), [%(array)s]);\n" % m)
-                        else:
-                            cf.write(self.type+".%(name)s = repmat(emlc_%(type)s(), [%(array)s]);\n" % m)
-                    else: # scalars
-                        cf.write(self.type+".%(name)s = emlc_%(type)s();\n" % m)
-            cf.write("\nend\n")
+                ## THIS DOES NOT BELONG HERE:
+                ## give them all an octave-compatible array
+                ## i.e. scalar -> [1,1], vector -> [n,1], multidimensional array -> (no change)
+                if not m['has_key']('array'):
+                    m['octave_array']="1,1"
+                else:
+                    split_array = m['array'].split(",")
+                    if len(split_array) == 1:
+                        m['octave_array'] = split_array[0]+",1"
+                    else:
+                        m['octave_array'] = m['array']
 
-        def safecopy_output_f(cf):
-            cf.write('function %(type)s_out_ = %(classname)s_safecopy_%(type)s(%(type)s_in_, n) %%#eml\n\n' % self)
-            cf.write('assert(isequal(size(%(type)s_in_), n));\n\n' % self)
-            cf.write('%(type)s_out_ = eml.nullcopy(repmat(emlc_%(type)s(), n));\n\n' % self)
-            cf.write('for k=1:prod(n)\n')
+                ## loop though members and write their individual constructors
+                if m['type'] in octave_primitives_map.keys():
+                    # primitives
+                    m['octave_type'] = octave_primitives_map[m['type']]
+                    cf.write(self.type+"_out_.%(name)s = %(octave_type)s(zeros([%(octave_array)s]));\n" % m)
+                else:
+                    # not primitives
+                    cf.write(self.type+"_out_.%(name)s = repmat(emlc_%(type)s(), [%(octave_array)s]);\n" % m)
+
+            cf.write(eml_constructor_template[1] % self)
+
+            ## loop though and safely copy each member
             for m in self['members']:
-                if m['type'] in primitives_map.keys(): # primitive type
-                    cf.write(("  "+self.type+"_out_(k).%(name)s = "+self.type+"_in_(k).%(name)s;\n") % m)
+                if m['type'] in octave_primitives_map.keys(): # primitive type
+                    cf.write(("    "+self.type+"_out_full_(k).%(name)s = "+self.type+"_in_(k).%(name)s;\n") % m)
                 else: # non-primitive type
                     if m['has_key']('array'): # arrays
-                        cf.write(("  "+self.type+"_out_(k).%(name)s = "+self.classname+"_safecopy_%(type)s("+self.type+"_in_.%(name)s, [%(array)s]));\n") % m)
+                        cf.write(("    "+self.type+"_out_full_(k).%(name)s = "+self.classname+"_%(type)s("+self.type+"_in_(k).%(name)s, [%(array)s]));\n") % m)
                     else: # scalars
-                        cf.write(("  "+self.type+"_out_(k).%(name)s = "+self.classname+"_safecopy_%(type)s("+self.type+"_in_.%(name)s, [1,1]);\n") % m)
-
-            cf.write("end\n\nend\n")
+                        cf.write(("    "+self.type+"_out_full_(k).%(name)s = "+self.classname+"_%(type)s("+self.type+"_in_(k).%(name)s, [1,1]);\n") % m)
+            cf.write(eml_constructor_template[2] % self)
 
         self.to_octave_code('octave/lcm_send/'+self['classname']+'_lcm_send_'+self['type'], lcm_send_output_f)
         self.to_octave_code('octave/lcm_send_dummy/'+self['classname']+'_lcm_send_'+self['type'], lcm_send_dummy_output_f)
         self.to_octave_code('octave/constructors/'+self['classname']+'_'+self['type'], constructor_output_f)
-        self.to_octave_code('octave/safecopy/'+self['classname']+'_safecopy_'+self['type'], safecopy_output_f)
 
     def to_include(self):
         pass
@@ -287,8 +284,6 @@ class LCMEnum(baseio.TagInheritance, baseio.OctaveCode):
         return estr
 
     def to_eml(self):
-        primitives_map = {'double':'double', 'float':'double', 'int8_t':'int8', 'int16_t':'int16', 'int32_t':'int32'}
- 
         def lcm_send_output_f(cf):
             cf.write(eml_lcm_send_template % self)
 
@@ -305,20 +300,16 @@ class LCMEnum(baseio.TagInheritance, baseio.OctaveCode):
         def enum_decoder_output_f(cf):
             cf.write(eml_enum_decoder_template_0 % self)
             for v,k in self['get_indices_with_fields']().iteritems():
-                cf.write('    case '+str(v)+'\n')
+                cf.write('    case int32('+str(v)+')\n')
                 cf.write(('        string_out = \''+k+'\';\n') % self)
             cf.write(eml_enum_decoder_template_1 % self)
 
         def constructor_output_f(cf):
             cf.write(eml_enum_constructor_template % self)
 
-        def safecopy_output_f(cf):
-            cf.write(eml_enum_safecopy_template % self)
-
         self.to_octave_code('octave/lcm_send/'+self['classname']+'_lcm_send_'+self['type'], lcm_send_output_f)
         self.to_octave_code('octave/lcm_send_dummy/'+self['classname']+'_lcm_send_'+self['type'], lcm_send_dummy_output_f)
         self.to_octave_code('octave/constructors/'+self['classname']+'_'+self['type'], constructor_output_f)
-        self.to_octave_code('octave/safecopy/'+self['classname']+'_safecopy_'+self['type'], safecopy_output_f)
         self.to_octave_code('octave/enum_encoders/encode_%(classname)s_%(type)s' % self, enum_encoder_output_f)
         self.to_octave_code('octave/enum_decoders/decode_%(classname)s_%(type)s' % self, enum_decoder_output_f)
 
