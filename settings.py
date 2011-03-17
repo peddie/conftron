@@ -167,7 +167,7 @@ class Settings(baseio.CHeader,
         self.path = path
         self.file = filename
         self.classname = name
-        self.settings = self._filter_settings(children)
+        self._filter_settings(children)
         self.class_struct_includes = self._class_struct_includes(class_structs)
 
     def merge(self, other):
@@ -205,8 +205,8 @@ class Settings(baseio.CHeader,
         die = sum([s.die for s in outstructs])
         if die:
             print "Lots of settings errors detected; cannot continue code generation."
-            exit(1)
-        return outstructs
+            sys.exit(1)
+        self.settings = outstructs
 
     def settings_functions(self):
         for s in self.settings:
